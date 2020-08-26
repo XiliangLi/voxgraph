@@ -1,0 +1,27 @@
+<launch>
+  <param name="use_sim_time" value="true" />
+
+  <include file="$(find orb_slam2_ros)/ros/launch/orb_slam2_ps_rgbd.launch" />
+  <node pkg="tf" type="static_transform_publisher" name="rgb_to_imu" args="0 0 0 0 0 1 0 /imu /ps_front_rgb 100" />
+
+  <node pkg="nodelet" type="nodelet" name="nodelet_manager" args="manager" output="screen"/>
+  <node pkg="nodelet" type="nodelet" name="metric_rect" args="load depth_image_proc/convert_metric node_manager --no-bond">
+    <remap from="image_raw" to="camera/depth/image_raw"/>
+    <remap from="image" to="camera/depth/image"/>
+  </node>
+
+  <node pkg="nodelet" type="nodelet" name="cloudify"
+        args="load depth_image_proc/point_cloud_xyzrgb nodelet_manager --no-bond">
+    <remap from="depth_registered/image_rect" to="/ps_front/depth_registered/image_raw"/>
+    <remap from="depth_registered/points" to="/ps_front/depth_registered/points"/>
+    <remap from="rgb/image_rect_color" to="/ps_front/rgb/image_raw"/>
+    <remap from="rgb/camera_info" to="/ps_front/rgb/camera_info"/>
+  </node>
+
+  <arg name="pointcloud_topic" value="/ps_front/depth_registered/points" />
+  <arg name="rosbag_skip_first_n_sec" value="5" />
+  <arg name="debug_mode" value="false" />
+  <arg name="show_rviz" value="true" />
+
+  <include file="$(find voxgraph)/launch/voxgraph_mapper.launch" pass_all_args="true" />
+</launch>
