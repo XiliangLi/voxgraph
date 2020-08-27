@@ -8,10 +8,10 @@ subscriber_queue_length: 10
 publisher_queue_length: 10
 
 input_odom_frame: "map"
-input_base_link_frame: "camera_link"
+input_base_link_frame: "camera_color_optical_frame"
 output_mission_frame: "mission"
 output_odom_frame: "map"
-output_base_link_frame: "camera_link"
+output_base_link_frame: "imu"
 output_sensor_frame: "sensor_voxgraph"
 
 # T_base_sensor:
@@ -20,9 +20,9 @@ output_sensor_frame: "sensor_voxgraph"
 # - [ 0.1336122,  0.0053288, 0.9910194, -0.131]
 # - [ 0.0,        0.0,       0.0,        1.0]
 
-tsdf_voxel_size: 0.05
+tsdf_voxel_size: 0.02
 tsdf_integrator:
-  truncation_distance: 0.10
+  truncation_distance: 0.05
   max_ray_length_m: 16.0
   use_const_weight: true
   use_weight_dropoff: true
