@@ -1,0 +1,4 @@
+<launch>
+  <node pkg="rosbag" type="record" name="orbslam_d435i_bagrecorder" output="screen" respawn="false" respawn_delay="0"
+    args="-o /home/lxy/Workspace/Datasets/eai_d435/eai-d435i-lab-loop --lz4 /camera/aligned_depth_to_color/image_raw /camera/color/image_raw /camera/depth_registered/points /tf /tf_static"/>
+</launch>

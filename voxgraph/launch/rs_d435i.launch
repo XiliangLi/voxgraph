@@ -1,0 +1,15 @@
+<launch>
+  <param name="use_sim_time" value="false" />
+
+  <include file="$(find orb_slam2_ros)/ros/launch/orb_slam2_d435_rgbd.launch" />
+  <node pkg="tf" type="static_transform_publisher" name="map_to_odom" args="0 0 0 0 0 1 0 /map /odom 100" />
+  <node pkg="tf" type="static_transform_publisher" name="camera_link_to_imu" args="0 0 0 0 0 1 0 /camera_link /imu 100" />
+  <!-- <node pkg="tf" type="static_transform_publisher" name="rgb_to_imu" args="0 0 0 0 0 1 0 /imu /ps_front_rgb 100" /> -->
+
+  <arg name="pointcloud_topic" value="/camera/depth_registered/points" />
+  <arg name="rosbag_skip_first_n_sec" value="5" />
+  <arg name="debug_mode" value="false" />
+  <arg name="show_rviz" value="false" />
+
+  <include file="$(find voxgraph)/launch/voxgraph_mapper_d435i.launch" pass_all_args="true" />
+</launch>
