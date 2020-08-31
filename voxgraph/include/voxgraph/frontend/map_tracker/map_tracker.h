@@ -31,6 +31,10 @@ class MapTracker {
 
   void publishTFs();
 
+  // Update current_time_ then send tf
+  void publishTFs(const ros::Time& current_time);
+
+
   // Transform getter methods
   // NOTE: For more info on the frame naming conventions,
   //       see the FrameNames class

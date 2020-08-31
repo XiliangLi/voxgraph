@@ -1,14 +1,14 @@
-verbose: false
+verbose: true
 debug: true
 auto_pause_rosbag: false
 
-submap_creation_interval: 10
+submap_creation_interval: 15
 loop_closure_topic_queue_length: 1000
-subscriber_queue_length: 10
+submap_topic_queue_length: 10
 publisher_queue_length: 10
 
 input_odom_frame: "map"
-input_base_link_frame: "camera_color_optical_frame"
+input_base_link_frame: "camera_link"
 output_mission_frame: "mission"
 output_odom_frame: "map"
 output_base_link_frame: "imu"
@@ -22,17 +22,17 @@ output_sensor_frame: "sensor_voxgraph"
 
 tsdf_voxel_size: 0.05
 tsdf_integrator:
-  truncation_distance: 0.13
-  max_ray_length_m: 16.0
+  truncation_distance: 0.15
+  max_ray_length_m: 3
   use_const_weight: true
   use_weight_dropoff: true
-  use_sparsity_compensation_factor: false
+  use_sparsity_compensation_factor: true
   sparsity_compensation_factor: 20.0
   # integration_order_mode: "sorted"
 
 measurements:
   submap_registration:
-    enabled: true
+    enabled: false
     sampling_ratio: 0.05
     registration_method: "explicit_to_implicit"
     information_matrix:
@@ -41,14 +41,14 @@ measurements:
       z_z:     1.0
       yaw_yaw: 1.0
   odometry:
-    enabled: true
+    enabled: false
     information_matrix:
       x_x:     1000.0
       y_y:     1000.0
       z_z:     2500.0
       yaw_yaw: 2500.0
   loop_closure:
-    enabled: true
+    enabled: false
     information_matrix:
       x_x:     100.0
       y_y:     100.0

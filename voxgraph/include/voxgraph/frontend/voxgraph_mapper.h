@@ -135,6 +135,7 @@ class VoxgraphMapper {
   bool registration_constraints_enabled_;
   bool odometry_constraints_enabled_;
   bool height_constraints_enabled_;
+  bool loop_closure_constraints_enabled_;
 
   // Instantiate the submap collection
   VoxgraphSubmap::Config submap_config_;
@@ -156,6 +157,10 @@ class VoxgraphMapper {
   // TODO(victorr): Deprecate the MapTracker
   MapTracker map_tracker_;
   Transformation T_odom__previous_submap_;
+
+  void startPublishingTf();
+  void publishTfCallback(const ros::TimerEvent& event);
+  ros::Timer tf_timer_;
 };
 }  // namespace voxgraph
 

@@ -90,6 +90,11 @@ void MapTracker::switchToNewSubmap(const Transformation& T_M_S_new) {
   T_S_B_ = initial_T_S_O_ * T_O_B_;
 }
 
+void MapTracker::publishTFs(const ros::Time& current_time) {
+  updateToTime(current_time, frame_names_.output_sensor_frame);
+  publishTFs();
+}
+
 void MapTracker::publishTFs() {
   TfHelper::publishTransform(submap_collection_ptr_->getActiveSubmapPose(),
                              frame_names_.output_mission_frame,
