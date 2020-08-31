@@ -32,7 +32,7 @@ tsdf_integrator:
 
 measurements:
   submap_registration:
-    enabled: false
+    enabled: true
     sampling_ratio: 0.05
     registration_method: "explicit_to_implicit"
     information_matrix:
@@ -41,7 +41,7 @@ measurements:
       z_z:     1.0
       yaw_yaw: 1.0
   odometry:
-    enabled: false
+    enabled: true
     information_matrix:
       x_x:     1000.0
       y_y:     1000.0

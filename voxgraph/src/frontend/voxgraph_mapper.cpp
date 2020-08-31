@@ -383,7 +383,7 @@ void VoxgraphMapper::submapCallback(
   publishMaps(latest_timestamp);
 
   // Publish the TF frames
-  map_tracker_.publishTFs(latest_timestamp);
+  map_tracker_.publishTFs();
   // startPublishingTf();
 
   // Publish the pose history
