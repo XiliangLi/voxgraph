@@ -59,4 +59,6 @@ measurements:
     information_zz: 2500.0
 
 mesh_min_weight: 2.0
-mesh_use_color: false
+submap_mesh_color_mode: "color"
+combined_mesh_color_mode: "normals"
+
