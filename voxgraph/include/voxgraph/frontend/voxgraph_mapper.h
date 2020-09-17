@@ -37,8 +37,8 @@ class VoxgraphMapper {
   ~VoxgraphMapper() = default;
 
   // ROS topic callbacks
-  void loopClosureCallback(const voxgraph_msgs::LoopClosure& loop_closure_msg);
-  void submapCallback(const voxblox_msgs::LayerWithTrajectory& submap_msg);
+  virtual void loopClosureCallback(const voxgraph_msgs::LoopClosure& loop_closure_msg);
+  virtual void submapCallback(const voxblox_msgs::LayerWithTrajectory& submap_msg);
 
   // ROS service callbacks
   bool publishSeparatedMeshCallback(
@@ -75,7 +75,7 @@ class VoxgraphMapper {
     return pose_graph_interface_.getSolverSummaries();
   }
 
- private:
+ protected:
   // Node handles
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
@@ -90,7 +90,7 @@ class VoxgraphMapper {
   RosbagHelper rosbag_helper_;
 
   // Interaction with ROS
-  void subscribeToTopics();
+  virtual void subscribeToTopics();
   void advertiseTopics();
   void advertiseServices();
   void getParametersFromRos();

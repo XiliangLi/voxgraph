@@ -8,10 +8,10 @@ submap_topic_queue_length: 10
 publisher_queue_length: 10
 
 input_odom_frame: "map"
-input_base_link_frame: "camera_link"
+input_base_link_frame: "robot_base"
 output_mission_frame: "mission"
 output_odom_frame: "map"
-output_base_link_frame: "imu"
+output_base_link_frame: "robot_base"
 output_sensor_frame: "sensor_voxgraph"
 
 # T_base_sensor:
