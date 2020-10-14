@@ -138,7 +138,6 @@ class VoxgraphMapper {
 
   // Instantiate the submap collection
   VoxgraphSubmap::Config submap_config_;
-  VoxgraphSubmapCollection::Ptr submap_collection_ptr_;
 
   // Visualization tools
   SubmapVisuals submap_vis_;
@@ -156,6 +155,9 @@ class VoxgraphMapper {
   // TODO(victorr): Deprecate the MapTracker
   MapTracker map_tracker_;
   Transformation T_odom__previous_submap_;
+
+ protected:
+  VoxgraphSubmapCollection::Ptr submap_collection_ptr_;
 };
 }  // namespace voxgraph
 
