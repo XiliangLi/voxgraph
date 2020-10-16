@@ -319,6 +319,8 @@ void VoxgraphMapper::submapCallback(
   //       cached members including the ESDF (implicitly creating it).
 
   // Add finished new submap to the submap collection
+  LOG(INFO) << "new submap from " << new_submap.getStartTime() << " to "
+            << new_submap.getEndTime();
   submap_collection_ptr_->addSubmap(std::move(new_submap));
 
   // Wait for the last optimization to finish before updating the constraints
