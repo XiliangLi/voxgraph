@@ -61,7 +61,7 @@ class PoseGraphInterface {
     return pose_graph_.getSolverSummaries();
   }
 
- private:
+ protected:
   bool verbose_;
 
   VoxgraphSubmapCollection::Ptr submap_collection_ptr_;
