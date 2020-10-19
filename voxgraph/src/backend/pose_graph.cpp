@@ -71,6 +71,11 @@ void PoseGraph::addRegistrationConstraint(
   }
 }
 
+void PoseGraph::addSubmapRelativePoseConstraint(
+    const RelativePoseConstraint::Config& config) {
+  constraints_collection_.addSubmapRelativePoseConstraint(config);
+}
+
 void PoseGraph::initialize(bool exclude_registration_constraints) {
   // Initialize the problem
   problem_options_.local_parameterization_ownership =

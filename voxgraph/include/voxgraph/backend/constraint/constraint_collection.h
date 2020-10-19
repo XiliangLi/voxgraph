@@ -19,8 +19,15 @@ class ConstraintCollection {
   void addRegistrationConstraint(const RegistrationConstraint::Config& config) {
     registration_constraints_.emplace_back(newConstraintId(), config);
   }
+  void addSubmapRelativePoseConstraint(
+      const RelativePoseConstraint::Config& config) {
+    submap_relative_pose_constraints_.emplace_back(newConstraintId(), config);
+  }
 
   void resetRegistrationConstraints() { registration_constraints_.clear(); }
+  void resetSubmapRelativePoseConstraints() {
+    submap_relative_pose_constraints_.clear();
+  }
 
   void addConstraintsToProblem(const NodeCollection& node_collection,
                                ceres::Problem* problem_ptr,
@@ -35,6 +42,7 @@ class ConstraintCollection {
   std::list<AbsolutePoseConstraint> absolute_pose_constraints_;
   std::list<RelativePoseConstraint> relative_pose_constraints_;
   std::list<RegistrationConstraint> registration_constraints_;
+  std::list<RelativePoseConstraint> submap_relative_pose_constraints_;
 };
 }  // namespace voxgraph
 
