@@ -41,6 +41,9 @@ class PoseGraph {
   void initialize(bool exclude_registration_constraints = false);
   void optimize(bool exclude_registration_constraints = false);
 
+  using ConstraintType = ConstraintCollection::ConstraintType;
+  std::vector<double> evaluateResiduals(ConstraintType constraint_type);
+
   PoseMap getSubmapPoses();
 
   typedef Eigen::Matrix<double, 4, 4> EdgeCovarianceMatrix;
