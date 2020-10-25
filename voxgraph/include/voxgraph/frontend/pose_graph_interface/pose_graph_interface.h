@@ -1,6 +1,7 @@
 #ifndef VOXGRAPH_FRONTEND_POSE_GRAPH_INTERFACE_POSE_GRAPH_INTERFACE_H_
 #define VOXGRAPH_FRONTEND_POSE_GRAPH_INTERFACE_POSE_GRAPH_INTERFACE_H_
 
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -59,6 +60,11 @@ class PoseGraphInterface {
 
   const PoseGraph::SolverSummaryList& getSolverSummaries() const {
     return pose_graph_.getSolverSummaries();
+  }
+
+  using ConstraintType = PoseGraph::ConstraintType;
+  std::vector<double> evaluateResiduals(ConstraintType constraint_type) {
+    return pose_graph_.evaluateResiduals(constraint_type);
   }
 
  protected:

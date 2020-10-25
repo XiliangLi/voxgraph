@@ -110,6 +110,16 @@ void PoseGraph::optimize(bool exclude_registration_constraints) {
   solver_summaries_.emplace_back(summary);
 }
 
+std::vector<double> PoseGraph::evaluateResiduals(
+    ConstraintType constraint_type) {
+  ceres::Problem::EvaluateOptions eval_options;
+  eval_options.residual_blocks =
+      constraints_collection_.getResidualBlockIds(constraint_type);
+  std::vector<double> residuals;
+  problem_ptr_->Evaluate(eval_options, NULL, &residuals, NULL, NULL);
+  return residuals;
+}
+
 PoseGraph::PoseMap PoseGraph::getSubmapPoses() {
   PoseMap submap_poses;
   for (const auto& submap_node_kv : node_collection_.getSubmapNodes()) {
