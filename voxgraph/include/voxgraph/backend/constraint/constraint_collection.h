@@ -24,10 +24,17 @@ class ConstraintCollection {
       const RelativePoseConstraint::Config& config) {
     submap_relative_pose_constraints_.emplace_back(newConstraintId(), config);
   }
+  void addForceRegistrationConstraint(
+      const RegistrationConstraint::Config& config) {
+    force_registration_constraints_.emplace_back(newConstraintId(), config);
+  }
 
   void resetRegistrationConstraints() { registration_constraints_.clear(); }
   void resetSubmapRelativePoseConstraints() {
     submap_relative_pose_constraints_.clear();
+  }
+  void resetForceRegistrationConstraints() {
+    force_registration_constraints_.clear();
   }
 
   void addConstraintsToProblem(const NodeCollection& node_collection,
@@ -65,6 +72,7 @@ class ConstraintCollection {
   std::list<RelativePoseConstraint> relative_pose_constraints_;
   std::list<RegistrationConstraint> registration_constraints_;
   std::list<RelativePoseConstraint> submap_relative_pose_constraints_;
+  std::list<RegistrationConstraint> force_registration_constraints_;
 };
 }  // namespace voxgraph
 
