@@ -30,12 +30,17 @@ class PoseGraph {
   void addRegistrationConstraint(const RegistrationConstraint::Config& config);
   void addSubmapRelativePoseConstraint(
       const RelativePoseConstraint::Config& config);
+  void addForceRegistrationConstraint(
+      const RegistrationConstraint::Config& config);
 
   void resetRegistrationConstraints() {
     constraints_collection_.resetRegistrationConstraints();
   }
   void resetSubmapRelativePoseConstraints() {
     constraints_collection_.resetSubmapRelativePoseConstraints();
+  }
+  void resetForceRegistrationConstraints() {
+    constraints_collection_.resetForceRegistrationConstraints();
   }
 
   void initialize(bool exclude_registration_constraints = false);
