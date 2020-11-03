@@ -17,6 +17,10 @@ void ConstraintCollection::addConstraintsToProblem(
        submap_relative_pose_constraints_) {
     submap_relative_pose_constraint.addToProblem(node_collection, problem_ptr);
   }
+  for (Constraint& force_registration_constraint :
+       force_registration_constraints_) {
+    force_registration_constraint.addToProblem(node_collection, problem_ptr);
+  }
   if (!exclude_registration_constraints) {
     for (Constraint& registration_constraint : registration_constraints_) {
       registration_constraint.addToProblem(node_collection, problem_ptr);
