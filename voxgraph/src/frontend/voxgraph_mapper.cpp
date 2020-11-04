@@ -421,9 +421,6 @@ void VoxgraphMapper::submapCallback(
   ros::Time latest_timestamp = submap_msg.trajectory.poses.back().header.stamp;
   publishMaps(latest_timestamp);
 
-  // Publish the TF frames
-  map_tracker_.publishTFs();
-
   // Publish the pose history
   if (pose_history_pub_.getNumSubscribers() > 0) {
     submap_vis_.publishPoseHistory(
