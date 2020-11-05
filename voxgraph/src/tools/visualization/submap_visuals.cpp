@@ -13,15 +13,24 @@
 namespace voxgraph {
 SubmapVisuals::SubmapVisuals(VoxgraphSubmap::Config submap_config,
                              voxblox::MeshIntegratorConfig mesh_config)
-    : mesh_config_(mesh_config), mesh_opacity_(1.0) {
+    : submap_config_(submap_config),
+      mesh_config_(mesh_config),
+      mesh_opacity_(1.0) {
   // Meshing params from ROS params server
   // NOTE(alexmillane): The separated mesher *requires* color, so this is
   //                    hard-coded.
   combined_submap_mesher_.reset(
-      new cblox::SubmapMesher(submap_config, mesh_config_));
+      new cblox::SubmapMesher(submap_config_, mesh_config_));
   mesh_config_.use_color = true;
   separated_submap_mesher_.reset(
-      new cblox::SubmapMesher(submap_config, mesh_config_));
+      new cblox::SubmapMesher(submap_config_, mesh_config_));
+}
+
+SubmapVisuals::SubmapVisuals(const SubmapVisuals& rhs)
+    : SubmapVisuals(rhs.submap_config_, rhs.mesh_config_) {
+  setMeshOpacity(rhs.mesh_opacity_);
+  setSubmapMeshColorMode(rhs.submap_mesh_color_mode_);
+  setCombinedMeshColorMode(rhs.combined_mesh_color_mode_);
 }
 
 void SubmapVisuals::publishMesh(const voxblox::MeshLayer::Ptr& mesh_layer_ptr,
