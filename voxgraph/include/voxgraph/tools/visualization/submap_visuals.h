@@ -59,6 +59,11 @@ class SubmapVisuals {
       const std::string& filepath,
       const cblox::SubmapCollection<VoxgraphSubmap>& submap_collection);
 
+  void saveAndPubCombinedMesh(
+      const cblox::SubmapCollection<VoxgraphSubmap>& submap_collection,
+      const std::string& mission_frame, const ros::Publisher& publisher,
+      const std::string& filepath);
+
   void publishBox(const BoxCornerMatrix& box_corner_matrix,
                   const voxblox::Color& box_color, const std::string& frame_id,
                   const std::string& name_space,

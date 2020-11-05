@@ -116,6 +116,21 @@ void SubmapVisuals::saveCombinedMesh(
   voxblox::outputMeshLayerAsPly(filepath, *mesh_layer_ptr);
 }
 
+void SubmapVisuals::saveAndPubCombinedMesh(
+    const cblox::SubmapCollection<VoxgraphSubmap>& submap_collection,
+    const std::string& mission_frame, const ros::Publisher& publisher,
+    const std::string& filepath) {
+  auto mesh_layer_ptr =
+      std::make_shared<cblox::MeshLayer>(submap_collection.block_size());
+  combined_submap_mesher_->generateCombinedMesh(submap_collection,
+                                                mesh_layer_ptr.get());
+
+  if (publisher.getNumSubscribers() > 0)
+    publishMesh(mesh_layer_ptr, mission_frame, publisher,
+                combined_mesh_color_mode_);
+  voxblox::outputMeshLayerAsPly(filepath, *mesh_layer_ptr);
+}
+
 void SubmapVisuals::publishBox(const BoxCornerMatrix& box_corner_matrix,
                                const voxblox::Color& box_color,
                                const std::string& frame_id,
