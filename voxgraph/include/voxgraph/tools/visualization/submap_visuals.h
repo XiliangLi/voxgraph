@@ -20,6 +20,9 @@ class SubmapVisuals {
   explicit SubmapVisuals(VoxgraphSubmap::Config submap_config,
                          voxblox::MeshIntegratorConfig mesh_config);
 
+  // Copy constructor, reset submap mesher ptr to avoid copy unique ptr
+  SubmapVisuals(const SubmapVisuals& rhs);
+
   // TODO(victorr): Use a Config with fromRosParams(...) method that is passed
   //                to the constructor method instead
   void setMeshOpacity(float mesh_opacity) { mesh_opacity_ = mesh_opacity; }
@@ -66,6 +69,7 @@ class SubmapVisuals {
                           const ros::Publisher& publisher) const;
 
  private:
+  VoxgraphSubmap::Config submap_config_;
   voxblox::MeshIntegratorConfig mesh_config_;
   std::unique_ptr<cblox::SubmapMesher> separated_submap_mesher_;
   std::unique_ptr<cblox::SubmapMesher> combined_submap_mesher_;
