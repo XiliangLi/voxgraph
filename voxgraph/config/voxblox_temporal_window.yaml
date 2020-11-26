@@ -1,5 +1,5 @@
 verbose: false
-world_frame: "mission"
+world_frame: "odom"
 color_mode: "normals"
 
 method: "projective"
@@ -8,11 +8,11 @@ sensor_vertical_resolution: 64
 sensor_vertical_field_of_view_degrees: 33.222
 integrator_threads: 8
 
-tsdf_voxel_size: 0.10
-truncation_distance: 0.40
+tsdf_voxel_size: 0.20
+truncation_distance: 0.80
 max_weight: 1000
 pointcloud_queue_size: 1
-max_ray_length_m: 16.0 # 14 or 16m would be better, but for that we need better odometry. Otherwise the surface get too damaged.
+max_ray_length_m: 14.0
 min_ray_length_m: 1.0
 max_consecutive_ray_collisions: 1
 use_const_weight: true

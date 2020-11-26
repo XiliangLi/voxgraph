@@ -25,30 +25,29 @@ class PoseGraph {
   void addReferenceFrameNode(const ReferenceFrameNode::Config& config);
   bool hasReferenceFrameNode(const ReferenceFrameNode::FrameId& frame_id);
 
+  bool setSubmapNodeConstant(const SubmapNode::SubmapId& submap_id,
+                             const bool constant) {
+    SubmapNode::Ptr submap_node_ptr =
+        node_collection_.getSubmapNodePtrById(submap_id);
+    if (submap_node_ptr) {
+      submap_node_ptr->setConstant(constant);
+      return true;
+    }
+    return false;
+  }
+
   void addAbsolutePoseConstraint(const AbsolutePoseConstraint::Config& config);
   void addRelativePoseConstraint(const RelativePoseConstraint::Config& config);
   void addRegistrationConstraint(const RegistrationConstraint::Config& config);
-  void addSubmapRelativePoseConstraint(
-      const RelativePoseConstraint::Config& config);
-  void addForceRegistrationConstraint(
-      const RegistrationConstraint::Config& config);
 
   void resetRegistrationConstraints() {
     constraints_collection_.resetRegistrationConstraints();
-  }
-  void resetSubmapRelativePoseConstraints() {
-    constraints_collection_.resetSubmapRelativePoseConstraints();
-  }
-  void resetForceRegistrationConstraints() {
-    constraints_collection_.resetForceRegistrationConstraints();
   }
 
   void initialize(bool exclude_registration_constraints = false);
   void optimize(bool exclude_registration_constraints = false);
 
-  using ConstraintType = ConstraintCollection::ConstraintType;
-  std::vector<double> evaluateResiduals(ConstraintType constraint_type);
-
+  bool getSubmapPose(const SubmapID submap_id, Transformation* submap_pose);
   PoseMap getSubmapPoses();
 
   typedef Eigen::Matrix<double, 4, 4> EdgeCovarianceMatrix;

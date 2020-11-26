@@ -1,11 +1,9 @@
 #ifndef VOXGRAPH_FRONTEND_VOXGRAPH_MAPPER_H_
 #define VOXGRAPH_FRONTEND_VOXGRAPH_MAPPER_H_
 
-#include <deque>
 #include <future>
 #include <memory>
 #include <string>
-#include <utility>
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -16,7 +14,6 @@
 
 #include "voxgraph/common.h"
 #include "voxgraph/frontend/frame_names.h"
-#include "voxgraph/frontend/map_tracker/map_tracker.h"
 #include "voxgraph/frontend/measurement_processors/gps_processor.h"
 #include "voxgraph/frontend/measurement_processors/pointcloud_integrator.h"
 #include "voxgraph/frontend/pose_graph_interface/pose_graph_interface.h"
@@ -40,7 +37,8 @@ class VoxgraphMapper {
 
   // ROS topic callbacks
   void loopClosureCallback(const voxgraph_msgs::LoopClosure& loop_closure_msg);
-  void submapCallback(const voxblox_msgs::LayerWithTrajectory& submap_msg);
+  virtual bool submapCallback(
+      const voxblox_msgs::LayerWithTrajectory& submap_msg);
 
   // ROS service callbacks
   bool publishSeparatedMeshCallback(
@@ -68,6 +66,9 @@ class VoxgraphMapper {
   bool saveOptimizationTimesCallback(
       voxblox_msgs::FilePath::Request& request,     // NOLINT
       voxblox_msgs::FilePath::Response& response);  // NOLINT
+  bool pauseOptimizationCallback(
+      std_srvs::SetBool::Request& request,     // NOLINT
+      std_srvs::SetBool::Response& response);  // NOLINT
 
   const VoxgraphSubmapCollection& getSubmapCollection() {
     return *submap_collection_ptr_;
@@ -77,7 +78,7 @@ class VoxgraphMapper {
     return pose_graph_interface_.getSolverSummaries();
   }
 
- protected:
+ private:
   // Node handles
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
@@ -100,6 +101,9 @@ class VoxgraphMapper {
   // New submap creation, pose graph optimization and map publishing
   int optimizePoseGraph();
   void publishMaps(const ros::Time& current_timestamp);
+  void publishSubmapPoseTFs();
+  double submap_pose_tf_publishing_period_s_;
+  ros::Timer submap_pose_tf_publishing_timer_;
 
   // Asynchronous handle for the pose graph optimization thread
   std::future<int> optimization_async_handle_;
@@ -114,7 +118,7 @@ class VoxgraphMapper {
   // TODO(victorr): Add support for absolute pose measurements
 
   // ROS topic publishers
-  ros::Publisher separated_mesh_pub_;
+  ros::Publisher submap_mesh_pub_;
   ros::Publisher combined_mesh_pub_;
   ros::Publisher pose_history_pub_;
   ros::Publisher loop_closure_links_pub_;
@@ -131,12 +135,14 @@ class VoxgraphMapper {
   ros::ServiceServer save_separated_mesh_srv_;
   ros::ServiceServer save_combined_mesh_srv_;
   ros::ServiceServer save_optimization_times_srv_;
+  ros::ServiceServer pause_optimization_srv_;
   // TODO(victorr): Add srvs to receive absolute pose and loop closure updates
 
   // Constraints to be used
   bool registration_constraints_enabled_;
   bool odometry_constraints_enabled_;
   bool height_constraints_enabled_;
+  bool pause_optimization_;
 
   // Instantiate the submap collection
   VoxgraphSubmap::Config submap_config_;
@@ -154,24 +160,8 @@ class VoxgraphMapper {
   SubmapServer submap_server_;
   LoopClosureEdgeServer loop_closure_edge_server_;
 
-  // Map tracker handles the odometry input and refines it using scan-to-map ICP
-  // TODO(victorr): Deprecate the MapTracker
-  MapTracker map_tracker_;
-  Transformation T_odom__previous_submap_;
-
-  std::deque<std::pair<voxgraph_msgs::LoopClosure, int>>
-      future_loop_closure_queue_;
-  int future_loop_closure_queue_length_;
-  void addFutureLoopClosure(const voxgraph_msgs::LoopClosure& loop_closure_msg);
-  void processFutureLoopClosure();
-  inline bool isTimeInFuture(const ros::Time& timestamp) {
-    SubmapID submap_id;
-    return !submap_collection_ptr_->lookupActiveSubmapByTime(timestamp,
-                                                             &submap_id);
-  }
-  bool addLoopClosureMesurement(
-      const voxgraph_msgs::LoopClosure& loop_closure_msg);
-  constexpr static int kMaxNotCatched = 2;
+  // Class handling all frame names used to interface with ROS
+  FrameNames frame_names_;
 };
 }  // namespace voxgraph
 

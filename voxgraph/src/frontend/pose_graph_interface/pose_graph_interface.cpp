@@ -8,10 +8,10 @@ PoseGraphInterface::PoseGraphInterface(
     ros::NodeHandle node_handle,
     VoxgraphSubmapCollection::Ptr submap_collection_ptr,
     voxblox::MeshIntegratorConfig mesh_config,
-    const std::string& visualizations_mission_frame, bool verbose)
+    const std::string& visualizations_odom_frame, bool verbose)
     : verbose_(verbose),
       submap_collection_ptr_(std::move(submap_collection_ptr)),
-      visualization_mission_frame_(visualizations_mission_frame),
+      visualization_odom_frame_(visualizations_odom_frame),
       submap_vis_(submap_collection_ptr_->getConfig(), mesh_config),
       new_loop_closures_added_since_last_optimization_(false) {
   // Advertise the pose graph visuals publisher
@@ -25,15 +25,37 @@ void PoseGraphInterface::addSubmap(SubmapID submap_id) {
   // Configure the submap node and add it to the pose graph
   SubmapNode::Config node_config = node_templates_.submap;
   node_config.submap_id = submap_id;
-  CHECK(submap_collection_ptr_->getSubmapPose(
-      submap_id, &node_config.T_mission_node_initial));
-  if (submap_id == 0) {
-    ROS_INFO("Setting pose of submap 0 to constant");
+  // Although the submap collection is in robocentric frame, the pose graph
+  // optimization is run in an inertial frame to avoid moving all submaps to
+  // follow the drift on the new submap
+  if (submap_collection_ptr_->size() == 1u) {
+    // Use the first submap as the inertial frame origin,
+    // and fix its pose in the optimization
+    node_config.T_I_node_initial = Transformation();
     node_config.set_constant = true;
   } else {
+    // Get the transformation from the current to the previous submap
+    SubmapID previous_submap_id = submap_collection_ptr_->getPreviousSubmapId();
+    Transformation T_O_previous_submap;
+    CHECK(submap_collection_ptr_->getSubmapPose(previous_submap_id,
+                                                &T_O_previous_submap));
+    Transformation T_O_current_submap;
+    CHECK(
+        submap_collection_ptr_->getSubmapPose(submap_id, &T_O_current_submap));
+    const Transformation T_previous_current_submap =
+        T_O_previous_submap.inverse() * T_O_current_submap;
+
+    // Transform the current submap pose into inertial frame
+    Transformation T_I_previous_submap;
+    CHECK(pose_graph_.getSubmapPose(previous_submap_id, &T_I_previous_submap));
+    const Transformation T_I_current_submap =
+        T_I_previous_submap * T_previous_current_submap;
+
+    node_config.T_I_node_initial = T_I_current_submap;
     node_config.set_constant = false;
   }
   pose_graph_.addSubmapNode(node_config);
+
   ROS_INFO_STREAM_COND(verbose_,
                        "Added node to graph for submap: " << submap_id);
 }
@@ -99,7 +121,7 @@ void PoseGraphInterface::addHeightMeasurement(const SubmapID& submap_id,
   constraint_config.submap_id = submap_id;
   constraint_config.T_ref_submap.getPosition().z() = height;
 
-  // Add the mission reference frame to the pose graph if it isn't already there
+  // Add the odom reference frame to the pose graph if it isn't already there
   addReferenceFrameIfMissing(constraint_config.reference_frame_id);
 
   // Add the height measurement to the pose graph
@@ -122,8 +144,8 @@ void PoseGraphInterface::updateOverlappingSubmapList() {
     // TODO(victorr): Move this to a better place (e.g. visualization class)
     if (submap_pub_.getNumSubscribers() > 0) {
       submap_vis_.publishBox(
-          first_submap.getMissionFrameSurfaceAabb().getCornerCoordinates(),
-          voxblox::Color::Blue(), visualization_mission_frame_,
+          first_submap.getOdomFrameSurfaceAabb().getCornerCoordinates(),
+          voxblox::Color::Blue(), visualization_odom_frame_,
           "surface_abb" + std::to_string(first_submap_id), submap_pub_);
     }
 
@@ -192,15 +214,28 @@ void PoseGraphInterface::optimize() {
 
   // Publish debug visuals
   if (pose_graph_pub_.getNumSubscribers() > 0) {
-    pose_graph_vis_.publishPoseGraph(pose_graph_, visualization_mission_frame_,
+    pose_graph_vis_.publishPoseGraph(pose_graph_, visualization_odom_frame_,
                                      "optimized", pose_graph_pub_);
   }
 }
 
 void PoseGraphInterface::updateSubmapCollectionPoses() {
-  for (const auto& submap_pose_kv : pose_graph_.getSubmapPoses()) {
-    submap_collection_ptr_->setSubmapPose(submap_pose_kv.first,
-                                          submap_pose_kv.second);
+  SubmapID last_submap_id = submap_collection_ptr_->getLastSubmapId();
+  Transformation T_I_last_submap, T_O_last_submap, T_O_I;
+  if (pose_graph_.getSubmapPose(last_submap_id, &T_I_last_submap) &&
+      submap_collection_ptr_->getSubmapPose(last_submap_id, &T_O_last_submap)) {
+    T_O_I = T_O_last_submap * T_I_last_submap.inverse();
+    for (const auto& submap_pose_kv : pose_graph_.getSubmapPoses()) {
+      // Write back the updated pose,
+      // after transforming them back into robocentric frame
+      Transformation T_O_submap = T_O_I * submap_pose_kv.second;
+      submap_collection_ptr_->setSubmapPose(submap_pose_kv.first, T_O_submap);
+    }
+  } else {
+    ROS_WARN_STREAM(
+        "Could not get the optimized or original pose for "
+        "submap ID: "
+        << last_submap_id);
   }
 }
 
