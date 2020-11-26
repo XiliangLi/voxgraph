@@ -80,7 +80,7 @@ class VoxgraphMapper {
     return pose_graph_interface_.getSolverSummaries();
   }
 
- private:
+ protected:
   // Node handles
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;

@@ -71,6 +71,36 @@ void PoseGraph::addRegistrationConstraint(
   }
 }
 
+void PoseGraph::addForceRegistrationConstraint(
+    const RegistrationConstraint::Config& config) {
+  CHECK_NE(config.first_submap_id, config.second_submap_id)
+      << "Cannot constrain submap " << config.first_submap_id << " to itself";
+
+  // Check if there're submap nodes corresponding to both submap IDs
+  CHECK(node_collection_.getSubmapNodePtrById(config.first_submap_id))
+      << "Graph contains no node for submap " << config.first_submap_id;
+  CHECK(node_collection_.getSubmapNodePtrById(config.second_submap_id))
+      << "Graph contains no node for submap " << config.second_submap_id;
+
+  // Add to the constraint set
+  constraints_collection_.addForceRegistrationConstraint(config);
+
+  // TODO(victorr): Remove or permanently add the experimental code below
+  if (config.registration.registration_point_type ==
+      VoxgraphSubmap::RegistrationPointType::kIsosurfacePoints) {
+    RegistrationConstraint::Config mirrored_config = config;
+    mirrored_config.first_submap_id = config.second_submap_id;
+    mirrored_config.first_submap_ptr = config.second_submap_ptr;
+    mirrored_config.second_submap_id = config.first_submap_id;
+    mirrored_config.second_submap_ptr = config.first_submap_ptr;
+    constraints_collection_.addForceRegistrationConstraint(mirrored_config);
+  }
+}
+
+void PoseGraph::addSubmapRelativePoseConstraint(
+    const RelativePoseConstraint::Config& config) {
+  constraints_collection_.addSubmapRelativePoseConstraint(config);
+}
 void PoseGraph::initialize(bool exclude_registration_constraints) {
   // Initialize the problem
   problem_options_.local_parameterization_ownership =
@@ -103,6 +133,16 @@ void PoseGraph::optimize(bool exclude_registration_constraints) {
   // Display and store the solver summary
   std::cout << summary.BriefReport() << std::endl;
   solver_summaries_.emplace_back(summary);
+}
+
+std::vector<double> PoseGraph::evaluateResiduals(
+    ConstraintType constraint_type) {
+  ceres::Problem::EvaluateOptions eval_options;
+  eval_options.residual_blocks =
+      constraints_collection_.getResidualBlockIds(constraint_type);
+  std::vector<double> residuals;
+  problem_ptr_->Evaluate(eval_options, NULL, &residuals, NULL, NULL);
+  return residuals;
 }
 
 bool PoseGraph::getSubmapPose(const SubmapID submap_id,
