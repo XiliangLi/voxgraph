@@ -103,8 +103,8 @@ class VoxgraphMapper {
   // New submap creation, pose graph optimization and map publishing
   int optimizePoseGraph();
   void publishMaps(const ros::Time& current_timestamp);
-  void publishSubmapPoseTFs();
   double submap_pose_tf_publishing_period_s_;
+  virtual void publishSubmapPoseTFs();
   ros::Timer submap_pose_tf_publishing_timer_;
 
   // Asynchronous handle for the pose graph optimization thread
