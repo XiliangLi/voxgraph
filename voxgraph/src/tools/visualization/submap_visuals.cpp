@@ -70,11 +70,7 @@ void SubmapVisuals::publishMesh(
   auto mesh_layer_ptr =
       std::make_shared<cblox::MeshLayer>(submap_collection.block_size());
 
-  voxblox::MeshIntegrator<voxblox::TsdfVoxel> reference_mesh_integrator(
-      mesh_config_, submap_ptr->getTsdfMap().getTsdfLayer(),
-      mesh_layer_ptr.get());
-  reference_mesh_integrator.generateMesh(false, false);
-  separated_submap_mesher_->colorMeshLayer(submap_color, mesh_layer_ptr.get());
+  generateSubmapMesh(submap_ptr, submap_color, mesh_layer_ptr.get());
 
   // Publish mesh
   publishMultiMesh(mesh_layer_ptr, frame_id, publisher, submap_mesh_color_mode_,
@@ -84,10 +80,12 @@ void SubmapVisuals::publishMesh(
 void SubmapVisuals::publishMesh(
     const cblox::SubmapCollection<VoxgraphSubmap>& submap_collection,
     const SubmapID& submap_id, const std::string& frame_id,
-    const ros::Publisher& publisher) {
-  const voxblox::Color submap_color =
-      submap_id_color_map_.colorLookup(submap_id);
-  publishMesh(submap_collection, submap_id, submap_color, frame_id, publisher);
+    const ros::Publisher& publisher, bool use_submap_color_mode) {
+  publishMesh(submap_collection, submap_id,
+              use_submap_color_mode
+                  ? voxblox::Color()
+                  : submap_id_color_map_.colorLookup(submap_id),
+              frame_id, publisher);
 }
 
 void SubmapVisuals::publishSeparatedMesh(

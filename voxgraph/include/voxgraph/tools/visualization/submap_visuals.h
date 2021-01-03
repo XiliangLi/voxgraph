@@ -10,6 +10,7 @@
 #include <minkindr_conversions/kindr_tf.h>
 #include <nav_msgs/Path.h>
 #include <ros/ros.h>
+#include <voxblox_msgs/MultiMesh.h>
 #include <voxblox_ros/mesh_vis.h>
 
 #include "voxgraph/frontend/submap_collection/voxgraph_submap_collection.h"
@@ -33,6 +34,24 @@ class SubmapVisuals {
     combined_mesh_color_mode_ = color_mode;
   }
 
+  void generateSubmapMesh(VoxgraphSubmap::ConstPtr submap_ptr,
+                          const voxblox::Color& submap_color,
+                          cblox::MeshLayer* mesh_layer_ptr) const {
+    voxblox::MeshIntegrator<voxblox::TsdfVoxel> reference_mesh_integrator(
+        mesh_config_, submap_ptr->getTsdfMap().getTsdfLayer(), mesh_layer_ptr);
+    reference_mesh_integrator.generateMesh(false, false);
+    if (submap_color.r != 0 || submap_color.g != 0 || submap_color.b != 0 ||
+        submap_color.a != 0)
+      separated_submap_mesher_->colorMeshLayer(submap_color, mesh_layer_ptr);
+  }
+
+  void generateSubmapMeshMsg(const voxblox::MeshLayer::Ptr& mesh_layer_ptr,
+                             voxblox_msgs::Mesh* mesh_msg) const {
+    CHECK(mesh_msg != nullptr);
+    voxblox::generateVoxbloxMeshMsg(mesh_layer_ptr, submap_mesh_color_mode_,
+                                    mesh_msg);
+  }
+
   void publishMesh(const voxblox::MeshLayer::Ptr& mesh_layer_ptr,
                    const std::string& frame_id, const ros::Publisher& publisher,
                    const voxblox::ColorMode& color_mode) const;
@@ -51,7 +70,7 @@ class SubmapVisuals {
   void publishMesh(
       const cblox::SubmapCollection<VoxgraphSubmap>& submap_collection,
       const SubmapID& submap_id, const std::string& frame_id,
-      const ros::Publisher& publisher);
+      const ros::Publisher& publisher, bool use_submap_color_mode = false);
 
   void publishSeparatedMesh(
       const cblox::SubmapCollection<VoxgraphSubmap>& submap_collection,
