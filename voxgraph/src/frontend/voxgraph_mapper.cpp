@@ -55,7 +55,6 @@ VoxgraphMapper::VoxgraphMapper(const ros::NodeHandle& nh,
       pose_graph_interface_(
           nh_private, submap_collection_ptr_, mesh_config,
           FrameNames::fromRosParams(nh_private).output_odom_frame),
-      projected_map_server_(nh_private),
       submap_server_(nh_private),
       loop_closure_edge_server_(nh_private),
       frame_names_(FrameNames::fromRosParams(nh_private)),
@@ -540,10 +539,6 @@ void VoxgraphMapper::publishMaps(const ros::Time& current_timestamp) {
         *submap_collection_ptr_, frame_names_.output_odom_frame,
         combined_mesh_pub_);
   }
-
-  // Publish the projected map as a TSDF
-  projected_map_server_.publishProjectedMap(*submap_collection_ptr_,
-                                            current_timestamp);
 
   // Publish the new submap's TSDF, ESDF, and surface vertices
   if (!submap_collection_ptr_->empty()) {

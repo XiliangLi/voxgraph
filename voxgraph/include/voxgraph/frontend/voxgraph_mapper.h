@@ -158,7 +158,6 @@ class VoxgraphMapper {
   PoseGraphInterface pose_graph_interface_;
 
   // Map servers, used to share the projected map and submaps with ROS nodes
-  ProjectedMapServer projected_map_server_;
   SubmapServer submap_server_;
   LoopClosureEdgeServer loop_closure_edge_server_;
 
