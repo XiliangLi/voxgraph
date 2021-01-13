@@ -25,9 +25,14 @@ class MapEvaluation {
   MapEvaluation::EvaluationDetails evaluate(
       const VoxgraphSubmapCollection& submap_collection);
 
+  MapEvaluation::EvaluationDetails evaluate(
+      const voxblox::Layer<voxblox::TsdfVoxel>& projected_tsdf_layer);
+
   // Find and apply the best rigid body alignment of layer A to B
   void alignSubmapAtoSubmapB(VoxgraphSubmap::Ptr submap_A,
                              VoxgraphSubmap::ConstPtr submap_B);
+
+  VoxgraphSubmap::Ptr getGroundTruthMapPtr() { return ground_truth_map_ptr_; }
 
  private:
   using TsdfVoxel = voxblox::TsdfVoxel;

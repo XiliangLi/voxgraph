@@ -168,8 +168,8 @@ void SubmapServer::publishSubmapPoses(
     const VoxgraphSubmapCollection::Ptr& submap_collection_ptr,
     const ros::Time& timestamp) {
   if (submap_poses_pub_.getNumSubscribers() > 0) {
-    publishSubmapPoses(submap_collection_ptr, "odom", timestamp,
-                       submap_poses_pub_);
+    publishSubmapPoses(submap_collection_ptr, frame_names_.input_odom_frame,
+                       timestamp, submap_poses_pub_);
   }
 }
 

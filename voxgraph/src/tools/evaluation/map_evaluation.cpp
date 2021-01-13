@@ -57,20 +57,16 @@ MapEvaluation::MapEvaluation(const ros::NodeHandle& node_handle,
 }
 
 MapEvaluation::EvaluationDetails MapEvaluation::evaluate(
-    const VoxgraphSubmapCollection& submap_collection) {
+    const voxblox::Layer<voxblox::TsdfVoxel>& projected_tsdf_layer) {
   // Get the voxel size and number of voxels per side
   voxblox::FloatingPoint voxel_size =
       ground_truth_map_ptr_->getTsdfMap().voxel_size();
   size_t voxels_per_side =
       ground_truth_map_ptr_->getTsdfMap().getTsdfLayer().voxels_per_side();
-  CHECK_EQ(submap_collection.getConfig().tsdf_voxel_size, voxel_size)
-      << "Submap collection and ground truth must have equal voxel size.";
+  CHECK_EQ(projected_tsdf_layer.voxel_size(), voxel_size)
+      << "Projected tsdf map and ground truth must have equal voxel size.";
 
-  // Load the submap collection's projected TSDF map into a VoxgraphSubmap
-  // NOTE: This is done in order to use our SubmapRegistrationHelper (see below)
   Transformation T_identity;
-  TsdfLayer projected_tsdf_layer(
-      submap_collection.getProjectedMap()->getTsdfLayer());
   VoxgraphSubmap::Ptr projected_map_ptr =
       std::make_shared<VoxgraphSubmap>(T_identity, 1, projected_tsdf_layer);
 
@@ -111,6 +107,15 @@ MapEvaluation::EvaluationDetails MapEvaluation::evaluate(
 
   return EvaluationDetails{evaluation_details,
                            T_projected_map__ground_truth.inverse()};
+}
+
+MapEvaluation::EvaluationDetails MapEvaluation::evaluate(
+    const VoxgraphSubmapCollection& submap_collection) {
+  // Load the submap collection's projected TSDF map into a VoxgraphSubmap
+  // NOTE: This is done in order to use our SubmapRegistrationHelper (see below)
+  TsdfLayer projected_tsdf_layer(
+      submap_collection.getProjectedMap()->getTsdfLayer());
+  return evaluate(projected_tsdf_layer);
 }
 
 void MapEvaluation::alignSubmapAtoSubmapB(
