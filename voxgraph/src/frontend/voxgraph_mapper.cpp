@@ -58,7 +58,8 @@ VoxgraphMapper::VoxgraphMapper(const ros::NodeHandle& nh,
       submap_server_(nh_private),
       loop_closure_edge_server_(nh_private),
       frame_names_(FrameNames::fromRosParams(nh_private)),
-      future_loop_closure_queue_length_(10) {
+      future_loop_closure_queue_length_(10),
+      fitness_eval_(ros::NodeHandle(nh_private, "fitness_eval")) {
   // Setup interaction with ROS
   getParametersFromRos();
   subscribeToTopics();
@@ -264,6 +265,7 @@ bool VoxgraphMapper::addLoopClosureMesurement(
   Transformation T_t1_t2(translation.cast<voxblox::FloatingPoint>(),
                          rotation.cast<voxblox::FloatingPoint>());
   Transformation T_AB = T_A_t1 * T_t1_t2 * T_B_t2.inverse();
+  if (!fitness_eval_.evaluateFitness(submap_A, submap_B, T_AB)) return false;
   pose_graph_interface_.addLoopClosureMeasurement(submap_id_A, submap_id_B,
                                                   T_AB);
 

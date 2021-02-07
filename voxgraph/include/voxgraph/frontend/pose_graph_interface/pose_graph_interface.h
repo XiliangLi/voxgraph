@@ -67,6 +67,11 @@ class PoseGraphInterface {
     return pose_graph_.evaluateResiduals(constraint_type);
   }
 
+  void setSubmapCollectionPtr(
+      const VoxgraphSubmapCollection::Ptr& submap_collection_ptr) {
+    submap_collection_ptr_ = submap_collection_ptr;
+  }
+
  protected:
   bool verbose_;
 

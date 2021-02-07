@@ -14,6 +14,7 @@
 #include <voxblox_msgs/LayerWithTrajectory.h>
 #include <voxgraph_msgs/LoopClosure.h>
 
+#include "voxgraph/backend/submap_fitness_evaluation.h"
 #include "voxgraph/common.h"
 #include "voxgraph/frontend/frame_names.h"
 #include "voxgraph/frontend/measurement_processors/gps_processor.h"
@@ -177,6 +178,8 @@ class VoxgraphMapper {
   bool addLoopClosureMesurement(
       const voxgraph_msgs::LoopClosure& loop_closure_msg);
   constexpr static int kMaxNotCatched = 2;
+
+  SubmapFitnessEvalution fitness_eval_;
 };
 }  // namespace voxgraph
 

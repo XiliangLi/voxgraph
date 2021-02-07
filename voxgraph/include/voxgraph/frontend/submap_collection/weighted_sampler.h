@@ -1,6 +1,8 @@
 #ifndef VOXGRAPH_FRONTEND_SUBMAP_COLLECTION_WEIGHTED_SAMPLER_H_
 #define VOXGRAPH_FRONTEND_SUBMAP_COLLECTION_WEIGHTED_SAMPLER_H_
 
+#include <voxblox/core/common.h>
+
 #include <algorithm>
 #include <random>
 #include <vector>
@@ -9,7 +11,7 @@ namespace voxgraph {
 template <typename ItemType>
 class WeightedSampler {
  public:
-  using ItemContainer = std::vector<ItemType>;
+  using ItemContainer = voxblox::AlignedVector<ItemType>;
 
   WeightedSampler() = default;
 
@@ -20,6 +22,8 @@ class WeightedSampler {
 
   // Randomly draw an item with probability proportional to its weight
   inline const ItemType& getRandomItem() const;
+
+  inline auto const& getItem() const { return items_; }
 
   size_t size() const { return items_.size(); }
 
