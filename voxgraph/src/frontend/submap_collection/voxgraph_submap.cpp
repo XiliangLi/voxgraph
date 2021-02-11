@@ -13,6 +13,20 @@ VoxgraphSubmap::VoxgraphSubmap(const voxblox::Transformation& T_O_S,
                                const voxgraph::VoxgraphSubmap::Config& config)
     : cblox::TsdfEsdfSubmap(T_O_S, submap_id, config), config_(config) {}
 
+VoxgraphSubmap::VoxgraphSubmap(const cblox::SubmapID& submap_id,
+                               const VoxgraphSubmap& rhs)
+    : cblox::TsdfEsdfSubmap(rhs.getPose(), submap_id, rhs.config_),
+      config_(rhs.config_),
+      finished_(rhs.finished_),
+      surface_obb_(rhs.surface_obb_),
+      map_obb_(rhs.map_obb_),
+      relevant_voxels_(rhs.relevant_voxels_),
+      isosurface_blocks_(rhs.isosurface_blocks_),
+      pose_history_(rhs.pose_history_) {
+  tsdf_map_ = rhs.tsdf_map_;
+  esdf_map_ = rhs.esdf_map_;
+}
+
 VoxgraphSubmap::VoxgraphSubmap(
     const voxblox::Transformation& T_O_S, const cblox::SubmapID& submap_id,
     const voxblox::Layer<voxblox::TsdfVoxel>& tsdf_layer)

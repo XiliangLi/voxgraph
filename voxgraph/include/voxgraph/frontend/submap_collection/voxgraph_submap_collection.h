@@ -71,6 +71,28 @@ class VoxgraphSubmapCollection
   //       the pose graph optimization only operates in 4D (x, y, z and yaw).
   static Transformation gravityAlignPose(const Transformation& input_pose);
 
+  auto const getTimeLine() const {
+    return std::make_pair(getSubmap(getFirstSubmapId()).getStartTime(),
+                          getSubmap(getLastSubmapId()).getEndTime());
+  }
+
+  bool lookUpSubmapByTime(ros::Time time, VoxgraphSubmap::Ptr* submap,
+                          SubmapID* csid, Transformation* T_submap_t) {
+    if (lookupActiveSubmapByTime(time, csid)) {
+      *submap = getSubmapPtr(*csid);
+      if ((*submap)->lookupPoseByTime(time, T_submap_t)) {
+        return true;
+      } else {
+        LOG(WARNING) << "Requested time " << time
+                     << " has no corresponding robot pose!";
+        return false;
+      }
+    } else {
+      LOG(WARNING) << "No active submap containing requested time ";
+      return false;
+    }
+  }
+
  private:
   bool verbose_;
 

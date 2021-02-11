@@ -137,10 +137,10 @@ void VoxgraphMapper::getParametersFromRos() {
 }
 
 void VoxgraphMapper::subscribeToTopics() {
-  loop_closure_subscriber_ =
-      nh_.subscribe(loop_closure_topic_, loop_closure_topic_queue_length_,
-                    &VoxgraphMapper::loopClosureCallback, this);
-  submap_subscriber_ = nh_.subscribe<voxblox_msgs::LayerWithTrajectory>(
+  loop_closure_subscriber_ = nh_private_.subscribe(
+      loop_closure_topic_, loop_closure_topic_queue_length_,
+      &VoxgraphMapper::loopClosureCallback, this);
+  submap_subscriber_ = nh_private_.subscribe<voxblox_msgs::LayerWithTrajectory>(
       submap_topic_, submap_topic_queue_length_,
       [this](const voxblox_msgs::LayerWithTrajectory::ConstPtr& msg) {
         submapCallback(*msg);

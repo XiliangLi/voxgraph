@@ -37,6 +37,10 @@ class VoxgraphSubmap : public cblox::TsdfEsdfSubmap {
   // NOTE: Copying the TSDF and ESDF layers is delegated to the
   //       TsdfEsdfSubmap copy constructor
   VoxgraphSubmap(const VoxgraphSubmap& rhs) = default;
+
+  // Copy submap with a new id
+  VoxgraphSubmap(const cblox::SubmapID& submap_id, const VoxgraphSubmap& rhs);
+
   // Move constructor
   // NOTE: Moving the TSDF and ESDF layers is delegated to the
   //       TsdfEsdfSubmap move constructor
