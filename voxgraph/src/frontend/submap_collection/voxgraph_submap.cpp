@@ -44,12 +44,17 @@ VoxgraphSubmap::VoxgraphSubmap(
   tsdf_map_ = std::make_shared<voxblox::TsdfMap>(tsdf_layer);
 }
 
-void VoxgraphSubmap::transformSubmap(const voxblox::Transformation& T_new_old) {
-  // Transform TSDF
-  voxblox::Layer<voxblox::TsdfVoxel> old_tsdf_layer(tsdf_map_->getTsdfLayer());
-  tsdf_map_->getTsdfLayerPtr()->removeAllBlocks();
-  voxblox::transformLayer(old_tsdf_layer, T_new_old,
-                          tsdf_map_->getTsdfLayerPtr());
+void VoxgraphSubmap::transformSubmap(const voxblox::Transformation& T_new_old,
+                                     bool transform_layer) {
+  if (transform_layer) {
+    // Transform TSDF
+    voxblox::Layer<voxblox::TsdfVoxel> old_tsdf_layer(
+        tsdf_map_->getTsdfLayer());
+    tsdf_map_->getTsdfLayerPtr()->removeAllBlocks();
+    voxblox::transformLayer(old_tsdf_layer, T_new_old,
+                            tsdf_map_->getTsdfLayerPtr());
+  }
+
   // Reset cached Oriented Bounding Boxes
   surface_obb_.reset();
   map_obb_.reset();

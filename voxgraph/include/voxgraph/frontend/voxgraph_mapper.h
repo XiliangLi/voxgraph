@@ -41,7 +41,8 @@ class VoxgraphMapper {
   // ROS topic callbacks
   void loopClosureCallback(const voxgraph_msgs::LoopClosure& loop_closure_msg);
   virtual bool submapCallback(
-      const voxblox_msgs::LayerWithTrajectory& submap_msg);
+      const voxblox_msgs::LayerWithTrajectory& submap_msg,
+      bool transform_layer);
 
   // ROS service callbacks
   bool publishSeparatedMeshCallback(

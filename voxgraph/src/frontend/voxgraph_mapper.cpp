@@ -143,7 +143,7 @@ void VoxgraphMapper::subscribeToTopics() {
   submap_subscriber_ = nh_private_.subscribe<voxblox_msgs::LayerWithTrajectory>(
       submap_topic_, submap_topic_queue_length_,
       [this](const voxblox_msgs::LayerWithTrajectory::ConstPtr& msg) {
-        submapCallback(*msg);
+        submapCallback(*msg, true);
       });
 }
 
@@ -285,7 +285,7 @@ bool VoxgraphMapper::addLoopClosureMesurement(
 }
 
 bool VoxgraphMapper::submapCallback(
-    const voxblox_msgs::LayerWithTrajectory& submap_msg) {
+    const voxblox_msgs::LayerWithTrajectory& submap_msg, bool transform_layer) {
   // Create the new submap draft
   VoxgraphSubmap new_submap = submap_collection_ptr_->draftNewSubmap();
 
@@ -327,7 +327,7 @@ bool VoxgraphMapper::submapCallback(
   const Transformation T_odom_submap =
       VoxgraphSubmapCollection::gravityAlignPose(
           T_odom_trajectory_middle_pose.cast<voxblox::FloatingPoint>());
-  new_submap.transformSubmap(T_odom_submap.inverse());
+  new_submap.transformSubmap(T_odom_submap.inverse(), transform_layer);
   // NOTE: In addition to changing the origin for the submap's trajectory and
   //       TSDF, it will also update the submap's T_O_S pose (such that the
   //       voxels don't move with respect to the odom frame) and update all

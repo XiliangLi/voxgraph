@@ -68,7 +68,8 @@ class VoxgraphSubmap : public cblox::TsdfEsdfSubmap {
   // NOTE: These cached members are mainly used in the registration cost funcs
   void finishSubmap() override;
 
-  void transformSubmap(const voxblox::Transformation& T_new_old);
+  void transformSubmap(const voxblox::Transformation& T_new_old,
+                       bool transform_layer = true);
 
   // The type of registration points supported by this submap
   enum class RegistrationPointType { kIsosurfacePoints = 0, kVoxels };
