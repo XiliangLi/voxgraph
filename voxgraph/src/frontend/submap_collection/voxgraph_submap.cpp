@@ -21,6 +21,7 @@ VoxgraphSubmap::VoxgraphSubmap(const cblox::SubmapID& submap_id,
       surface_obb_(rhs.surface_obb_),
       map_obb_(rhs.map_obb_),
       relevant_voxels_(rhs.relevant_voxels_),
+      isosurface_vertices_(rhs.isosurface_vertices_),
       isosurface_blocks_(rhs.isosurface_blocks_),
       pose_history_(rhs.pose_history_) {
   tsdf_map_ = rhs.tsdf_map_;

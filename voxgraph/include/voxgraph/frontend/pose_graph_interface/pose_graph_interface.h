@@ -1,6 +1,7 @@
 #ifndef VOXGRAPH_FRONTEND_POSE_GRAPH_INTERFACE_POSE_GRAPH_INTERFACE_H_
 #define VOXGRAPH_FRONTEND_POSE_GRAPH_INTERFACE_POSE_GRAPH_INTERFACE_H_
 
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -16,6 +17,7 @@
 namespace voxgraph {
 class PoseGraphInterface {
  public:
+  typedef std::shared_ptr<PoseGraphInterface> Ptr;
   typedef std::vector<SubmapIdPair> OverlappingSubmapList;
 
   explicit PoseGraphInterface(
@@ -29,7 +31,7 @@ class PoseGraphInterface {
     measurement_templates_.setFromRosParams(node_handle);
   }
 
-  void addSubmap(SubmapID submap_id);
+  virtual void addSubmap(SubmapID submap_id);
 
   // Method to recalculate which submaps overlap and update their
   // registration constraints accordingly
@@ -72,6 +74,10 @@ class PoseGraphInterface {
     submap_collection_ptr_ = submap_collection_ptr;
   }
 
+  bool hasSubmapNode(const voxgraph::SubmapNode::SubmapId& submap_id) {
+    return pose_graph_.hasSubmapNode(submap_id);
+  }
+
  protected:
   bool verbose_;
 
@@ -93,7 +99,8 @@ class PoseGraphInterface {
   OverlappingSubmapList overlapping_submap_list_;
   void updateOverlappingSubmapList();
 
-  // Keep track of whether new loop closures have been added
+  // K
+  // eep track of whether new loop closures have been added
   // since the pose graph was last optimized
   bool new_loop_closures_added_since_last_optimization_;
 

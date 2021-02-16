@@ -185,6 +185,13 @@ class VoxgraphMapper {
   constexpr static int kMaxNotCatched = 2;
 
   SubmapFitnessEvalution fitness_eval_;
+
+  virtual VoxgraphSubmap draftNewSubmap() {
+    return submap_collection_ptr_->draftNewSubmap();
+  }
+  virtual void addSubmap(const VoxgraphSubmap::Ptr& new_submap) {
+    submap_collection_ptr_->addSubmap(new_submap);
+  }
 };
 }  // namespace voxgraph
 

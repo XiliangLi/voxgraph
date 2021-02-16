@@ -65,9 +65,6 @@ VoxgraphMapper::VoxgraphMapper(const ros::NodeHandle& nh,
   subscribeToTopics();
   advertiseTopics();
   advertiseServices();
-  submap_pose_tf_publishing_timer_ = nh_private.createTimer(
-      ros::Duration(submap_pose_tf_publishing_period_s_),
-      std::bind(&VoxgraphMapper::publishSubmapPoseTFs, this));
 }
 
 void VoxgraphMapper::getParametersFromRos() {
@@ -287,7 +284,7 @@ bool VoxgraphMapper::addLoopClosureMesurement(
 bool VoxgraphMapper::submapCallback(
     const voxblox_msgs::LayerWithTrajectory& submap_msg, bool transform_layer) {
   // Create the new submap draft
-  VoxgraphSubmap new_submap = submap_collection_ptr_->draftNewSubmap();
+  VoxgraphSubmap new_submap = draftNewSubmap();
 
   // Deserialize the submap trajectory
   // TODO(victorr): Add check to ensure that the odom frames from voxblox and
@@ -334,7 +331,7 @@ bool VoxgraphMapper::submapCallback(
   //       cached members including the ESDF (implicitly creating it).
 
   // Add finished new submap to the submap collection
-  submap_collection_ptr_->addSubmap(std::move(new_submap));
+  addSubmap(std::make_shared<VoxgraphSubmap>(new_submap));
 
   // Wait for the last optimization to finish before updating the constraints
   if (optimization_async_handle_.valid() &&
@@ -402,7 +399,6 @@ bool VoxgraphMapper::submapCallback(
   // Publish the map in its different representations
   ros::Time latest_timestamp = submap_msg.trajectory.poses.back().header.stamp;
   publishMaps(latest_timestamp);
-  publishSubmapPoseTFs();
 
   // Signal that the new submap was successfully added
   return true;

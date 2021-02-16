@@ -15,7 +15,6 @@
 #include "voxgraph/common.h"
 #include "voxgraph/frontend/submap_collection/submap_timeline.h"
 #include "voxgraph/frontend/submap_collection/voxgraph_submap.h"
-
 namespace voxgraph {
 class VoxgraphSubmapCollection
     : public cblox::SubmapCollection<VoxgraphSubmap> {
