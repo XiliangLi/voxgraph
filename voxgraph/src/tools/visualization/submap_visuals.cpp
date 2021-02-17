@@ -140,7 +140,8 @@ void SubmapVisuals::saveAndPubCombinedMesh(
   if (publisher.getNumSubscribers() > 0)
     publishMesh(mesh_layer_ptr, mission_frame, publisher,
                 combined_mesh_color_mode_);
-  voxblox::outputMeshLayerAsPly(filepath, *mesh_layer_ptr);
+  if (filepath.size() > 0)
+    voxblox::outputMeshLayerAsPly(filepath, *mesh_layer_ptr);
 }
 
 void SubmapVisuals::publishBox(const BoxCornerMatrix& box_corner_matrix,
