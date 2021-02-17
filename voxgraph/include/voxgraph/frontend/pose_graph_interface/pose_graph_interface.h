@@ -11,6 +11,7 @@
 #include "voxgraph/frontend/pose_graph_interface/measurement_templates.h"
 #include "voxgraph/frontend/pose_graph_interface/node_templates.h"
 #include "voxgraph/frontend/submap_collection/voxgraph_submap_collection.h"
+#include "voxgraph/frontend/submap_fitness_evaluation.h"
 #include "voxgraph/tools/visualization/pose_graph_visuals.h"
 #include "voxgraph/tools/visualization/submap_visuals.h"
 
@@ -106,6 +107,8 @@ class PoseGraphInterface {
 
   // Helper to add reference frames to the pose graph
   void addReferenceFrameIfMissing(ReferenceFrameNode::FrameId frame_id);
+
+  SubmapFitnessEvalution fitness_eval_;
 };
 }  // namespace voxgraph
 

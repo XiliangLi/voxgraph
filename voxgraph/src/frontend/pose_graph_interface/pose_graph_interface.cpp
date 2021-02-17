@@ -1,5 +1,6 @@
 #include "voxgraph/frontend/pose_graph_interface/pose_graph_interface.h"
 
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -13,7 +14,8 @@ PoseGraphInterface::PoseGraphInterface(
       submap_collection_ptr_(std::move(submap_collection_ptr)),
       visualization_odom_frame_(visualizations_odom_frame),
       submap_vis_(submap_collection_ptr_->getConfig(), mesh_config),
-      new_loop_closures_added_since_last_optimization_(false) {
+      new_loop_closures_added_since_last_optimization_(false),
+      fitness_eval_(node_handle) {
   // Advertise the pose graph visuals publisher
   pose_graph_pub_ = node_handle.advertise<visualization_msgs::Marker>(
       "pose_graph", 100, true);
@@ -90,6 +92,18 @@ void PoseGraphInterface::addOdometryMeasurement(
 void PoseGraphInterface::addLoopClosureMeasurement(
     const SubmapID& from_submap, const SubmapID& to_submap,
     const Transformation& transform) {
+  auto fitness_eval_result = fitness_eval_.evaluateFitness(
+      submap_collection_ptr_->getSubmap(from_submap),
+      submap_collection_ptr_->getSubmap(to_submap), transform);
+  if (!fitness_eval_result.first) {
+    LOG(WARNING) << "loop closure fitness eval failed "
+                 << fitness_eval_result.second;
+    return;
+  } else {
+    LOG(INFO) << "loop closure fitness eval succeed "
+              << fitness_eval_result.second;
+  }
+
   // Configure the loop closure constraint
   RelativePoseConstraint::Config constraint_config =
       measurement_templates_.loop_closure;
