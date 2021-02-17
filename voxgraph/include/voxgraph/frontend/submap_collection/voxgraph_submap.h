@@ -7,6 +7,7 @@
 
 #include <cblox/core/tsdf_esdf_submap.h>
 #include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
 
 #include "voxgraph/frontend/submap_collection/bounding_box.h"
 #include "voxgraph/frontend/submap_collection/registration_point.h"
@@ -93,6 +94,8 @@ class VoxgraphSubmap : public cblox::TsdfEsdfSubmap {
   static VoxgraphSubmap::Ptr LoadFromStream(const Config& config,
                                             std::fstream* proto_file_ptr,
                                             uint64_t* tmp_byte_offset_ptr);
+
+  sensor_msgs::PointCloud2 mesh_pointcloud_;
 
  private:
   typedef Eigen::Matrix<voxblox::FloatingPoint, 4, 8> HomogBoxCornerMatrix;
