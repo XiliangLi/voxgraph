@@ -95,7 +95,7 @@ class VoxgraphSubmap : public cblox::TsdfEsdfSubmap {
                                             std::fstream* proto_file_ptr,
                                             uint64_t* tmp_byte_offset_ptr);
 
-  sensor_msgs::PointCloud2 mesh_pointcloud_;
+  sensor_msgs::PointCloud2::Ptr mesh_pointcloud_;
 
  private:
   typedef Eigen::Matrix<voxblox::FloatingPoint, 4, 8> HomogBoxCornerMatrix;

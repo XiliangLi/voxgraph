@@ -11,9 +11,9 @@ namespace voxgraph {
 class SubmapFitnessEvalution {
  public:
   struct Config {
-    float max_valid_distance = 0.005;
+    float max_valid_distance = 0.05;
     bool only_isopoints = true;
-    float k_overlap = 0.30;
+    float k_overlap = 0.15;
 
     friend inline std::ostream& operator<<(std::ostream& s, const Config& v) {
       s << std::endl

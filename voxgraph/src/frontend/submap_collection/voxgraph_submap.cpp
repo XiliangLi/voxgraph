@@ -11,7 +11,9 @@ namespace voxgraph {
 VoxgraphSubmap::VoxgraphSubmap(const voxblox::Transformation& T_O_S,
                                const cblox::SubmapID& submap_id,
                                const voxgraph::VoxgraphSubmap::Config& config)
-    : cblox::TsdfEsdfSubmap(T_O_S, submap_id, config), config_(config) {}
+    : cblox::TsdfEsdfSubmap(T_O_S, submap_id, config),
+      config_(config),
+      mesh_pointcloud_(new sensor_msgs::PointCloud2()) {}
 
 VoxgraphSubmap::VoxgraphSubmap(const cblox::SubmapID& submap_id,
                                const VoxgraphSubmap& rhs)
@@ -23,7 +25,8 @@ VoxgraphSubmap::VoxgraphSubmap(const cblox::SubmapID& submap_id,
       relevant_voxels_(rhs.relevant_voxels_),
       isosurface_vertices_(rhs.isosurface_vertices_),
       isosurface_blocks_(rhs.isosurface_blocks_),
-      pose_history_(rhs.pose_history_) {
+      pose_history_(rhs.pose_history_),
+      mesh_pointcloud_(new sensor_msgs::PointCloud2()) {
   tsdf_map_ = rhs.tsdf_map_;
   esdf_map_ = rhs.esdf_map_;
 }
@@ -31,7 +34,8 @@ VoxgraphSubmap::VoxgraphSubmap(const cblox::SubmapID& submap_id,
 VoxgraphSubmap::VoxgraphSubmap(
     const voxblox::Transformation& T_O_S, const cblox::SubmapID& submap_id,
     const voxblox::Layer<voxblox::TsdfVoxel>& tsdf_layer)
-    : cblox::TsdfEsdfSubmap(T_O_S, submap_id, Config()) {
+    : cblox::TsdfEsdfSubmap(T_O_S, submap_id, Config()),
+      mesh_pointcloud_(new sensor_msgs::PointCloud2()) {
   // Update the inherited TsdfEsdfSubmap config
   config_.tsdf_voxel_size = tsdf_layer.voxel_size();
   config_.tsdf_voxels_per_side = tsdf_layer.voxels_per_side();
