@@ -112,7 +112,8 @@ void PoseGraph::initialize(bool exclude_registration_constraints) {
       node_collection_, problem_ptr_.get(), exclude_registration_constraints);
 }
 
-void PoseGraph::optimize(bool exclude_registration_constraints) {
+void PoseGraph::optimize(bool exclude_registration_constraints,
+                         float parameter_tolerance) {
   // Initialize the problem
   initialize(exclude_registration_constraints);
 
@@ -120,7 +121,7 @@ void PoseGraph::optimize(bool exclude_registration_constraints) {
   ceres::Solver::Options ceres_options;
   // TODO(victorr): Set these from parameters
   // TODO(victorr): Look into manual parameter block ordering
-  ceres_options.parameter_tolerance = 3e-3;
+  ceres_options.parameter_tolerance = parameter_tolerance;
   //  ceres_options.max_num_iterations = 4;
   ceres_options.max_solver_time_in_seconds = 4;
   ceres_options.num_threads = 4;

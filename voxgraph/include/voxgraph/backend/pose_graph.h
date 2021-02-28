@@ -55,7 +55,8 @@ class PoseGraph {
   }
 
   void initialize(bool exclude_registration_constraints = false);
-  void optimize(bool exclude_registration_constraints = false);
+  void optimize(bool exclude_registration_constraints = false,
+                float parameter_tolerance = 3e-3);
 
   using ConstraintType = ConstraintCollection::ConstraintType;
   std::vector<double> evaluateResiduals(ConstraintType constraint_type);

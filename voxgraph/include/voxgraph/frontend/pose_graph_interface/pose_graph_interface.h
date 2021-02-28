@@ -1,6 +1,7 @@
 #ifndef VOXGRAPH_FRONTEND_POSE_GRAPH_INTERFACE_POSE_GRAPH_INTERFACE_H_
 #define VOXGRAPH_FRONTEND_POSE_GRAPH_INTERFACE_POSE_GRAPH_INTERFACE_H_
 
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -44,13 +45,43 @@ class PoseGraphInterface {
   void addOdometryMeasurement(const SubmapID& first_submap_id,
                               const SubmapID& second_submap_id,
                               const Transformation& T_S1_S2);
-  void addLoopClosureMeasurement(const SubmapID& from_submap,
+  bool addLoopClosureMeasurement(const SubmapID& from_submap,
                                  const SubmapID& to_submap,
-                                 const Transformation& transform);
+                                 const Transformation& transform,
+                                 bool consistency_check = false);
+  bool checkLoopClosureCandidates() {
+    bool add_new_loop = false;
+    for (auto& kv : loop_candidates_) {
+      bool added = false;
+      if (kv.second.size() < 2) continue;
+      for (size_t i = 0; i < kv.second.size() - 1; i++) {
+        bool consistent = true;
+        for (size_t j = i + 1; i < kv.second.size(); j++) {
+          auto res = kv.second[i].inverse() * kv.second[j];
+          if (res.getPosition().norm() > 0.04 ||
+              std::abs(res.getRotation().w()) > 0.005) {
+            consistent = false;
+            break;
+          }
+        }
+        if (!consistent) {
+          kv.second.erase(kv.second.begin() + i);
+          i--;
+        } else {
+          addLoopClosureMeasurement(kv.first.first, kv.first.second,
+                                    kv.second[i]);
+          add_new_loop = true;
+          added = true;
+        }
+      }
+      if (added) loop_candidates_.erase(kv.first);
+    }
+    return add_new_loop;
+  }
   void addGpsMeasurement() {}
   void addHeightMeasurement(const SubmapID& submap_id, const double& height);
 
-  void optimize();
+  void optimize(float parameter_tolerance = 3e-3);
 
   void updateSubmapCollectionPoses();
 
@@ -109,6 +140,7 @@ class PoseGraphInterface {
   void addReferenceFrameIfMissing(ReferenceFrameNode::FrameId frame_id);
 
   SubmapFitnessEvalution fitness_eval_;
+  std::map<SubmapIdPair, std::vector<Transformation>> loop_candidates_;
 };
 }  // namespace voxgraph
 

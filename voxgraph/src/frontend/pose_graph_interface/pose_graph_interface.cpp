@@ -89,19 +89,28 @@ void PoseGraphInterface::addOdometryMeasurement(
   pose_graph_.addRelativePoseConstraint(constraint_config);
 }
 
-void PoseGraphInterface::addLoopClosureMeasurement(
+bool PoseGraphInterface::addLoopClosureMeasurement(
     const SubmapID& from_submap, const SubmapID& to_submap,
-    const Transformation& transform) {
+    const Transformation& transform, bool consistency_check) {
   auto fitness_eval_result = fitness_eval_.evaluateFitness(
       submap_collection_ptr_->getSubmap(from_submap),
       submap_collection_ptr_->getSubmap(to_submap), transform);
   if (!fitness_eval_result.first) {
     LOG(WARNING) << "loop closure fitness eval failed "
                  << fitness_eval_result.second;
-    return;
+    return false;
   } else {
     LOG(INFO) << "loop closure fitness eval succeed "
               << fitness_eval_result.second;
+  }
+
+  if (consistency_check) {
+    SubmapIdPair loop_id(from_submap, to_submap);
+    if (!loop_candidates_.count(loop_id)) {
+      loop_candidates_.emplace(loop_id, std::vector<Transformation>());
+    }
+    loop_candidates_[loop_id].emplace_back(transform);
+    return true;
   }
 
   // Configure the loop closure constraint
@@ -125,6 +134,8 @@ void PoseGraphInterface::addLoopClosureMeasurement(
 
   // Indicate that a new loop closure constraint has been added
   new_loop_closures_added_since_last_optimization_ = true;
+
+  return true;
 }
 
 void PoseGraphInterface::addHeightMeasurement(const SubmapID& submap_id,
@@ -210,21 +221,21 @@ void PoseGraphInterface::updateRegistrationConstraints() {
   }
 }
 
-void PoseGraphInterface::optimize() {
+void PoseGraphInterface::optimize(float parameter_tolerance) {
   // If new loop closures were added since the last optimization run,
   // preoptimize the graph without considering the registration constraints
   // NOTE: This is done to reduce the effect of registration constraints
   //       that strongly stick to local minima
   if (new_loop_closures_added_since_last_optimization_) {
     // Optimize the graph excluding the registration constraints
-    pose_graph_.optimize(true);
+    pose_graph_.optimize(true, parameter_tolerance);
 
     // Indicate that the new loop closures have been taken care off
     new_loop_closures_added_since_last_optimization_ = false;
   }
 
   // Optimize the pose graph with all constraints enabled
-  pose_graph_.optimize();
+  pose_graph_.optimize(parameter_tolerance);
 
   // Publish debug visuals
   if (pose_graph_pub_.getNumSubscribers() > 0) {
@@ -234,22 +245,9 @@ void PoseGraphInterface::optimize() {
 }
 
 void PoseGraphInterface::updateSubmapCollectionPoses() {
-  SubmapID last_submap_id = submap_collection_ptr_->getLastSubmapId();
-  Transformation T_I_last_submap, T_O_last_submap, T_O_I;
-  if (pose_graph_.getSubmapPose(last_submap_id, &T_I_last_submap) &&
-      submap_collection_ptr_->getSubmapPose(last_submap_id, &T_O_last_submap)) {
-    T_O_I = T_O_last_submap * T_I_last_submap.inverse();
-    for (const auto& submap_pose_kv : pose_graph_.getSubmapPoses()) {
-      // Write back the updated pose,
-      // after transforming them back into robocentric frame
-      Transformation T_O_submap = T_O_I * submap_pose_kv.second;
-      submap_collection_ptr_->setSubmapPose(submap_pose_kv.first, T_O_submap);
-    }
-  } else {
-    ROS_WARN_STREAM(
-        "Could not get the optimized or original pose for "
-        "submap ID: "
-        << last_submap_id);
+  for (const auto& submap_pose_kv : pose_graph_.getSubmapPoses()) {
+    submap_collection_ptr_->setSubmapPose(submap_pose_kv.first,
+                                          submap_pose_kv.second);
   }
 }
 
