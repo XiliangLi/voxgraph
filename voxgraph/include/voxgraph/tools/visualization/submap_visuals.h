@@ -88,6 +88,14 @@ class SubmapVisuals {
       const std::string& filepath,
       const cblox::SubmapCollection<VoxgraphSubmap>& submap_collection);
 
+  void getCombinedMesh(
+      cblox::MeshLayer* mesh_layer_ptr,
+      const cblox::SubmapCollection<VoxgraphSubmap>& submap_collection) {
+    CHECK(mesh_layer_ptr != nullptr);
+    combined_submap_mesher_->generateCombinedMesh(submap_collection,
+                                                  mesh_layer_ptr);
+  }
+
   void saveAndPubCombinedMesh(
       const cblox::SubmapCollection<VoxgraphSubmap>& submap_collection,
       const std::string& mission_frame, const ros::Publisher& publisher,
