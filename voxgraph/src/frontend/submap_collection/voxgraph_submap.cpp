@@ -159,6 +159,8 @@ const WeightedSampler<RegistrationPoint>& VoxgraphSubmap::getRegistrationPoints(
       return relevant_voxels_;
     case RegistrationPointType::kIsosurfacePoints:
       return isosurface_vertices_;
+    default:
+      return isosurface_vertices_;
   }
 }
 
