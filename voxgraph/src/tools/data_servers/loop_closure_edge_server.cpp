@@ -5,7 +5,10 @@
 #include "voxgraph/common.h"
 
 namespace voxgraph {
-constexpr double LoopClosureEdgeServer::set_unknown_covariance_entries_to_;
+
+constexpr bool LoopClosureEdgeServer::kFake6dofTransforms;
+constexpr double LoopClosureEdgeServer::kSetUnknownCovarianceEntriesTo;
+
 LoopClosureEdgeServer::LoopClosureEdgeServer(ros::NodeHandle nh_private,
                                              bool verbose)
     : verbose_(verbose) {
@@ -55,22 +58,22 @@ void LoopClosureEdgeServer::publishLoopClosureEdges(
     edge_msg.timestamp_B = second_submap.getStartTime();
 
     // Set the edge's observed transformation
-    Transformation T_M_A = first_submap.getPose();
-    Transformation T_M_B = second_submap.getPose();
+    Transformation T_O_A = first_submap.getPose();
+    Transformation T_O_B = second_submap.getPose();
 
-    if (fake_6dof_transforms_) {
-      // Go from 4DoF submap origin poses T_M_S to 6DoF robot poses T_M_R
-      // by using T_M_B = T_M_S * T_S_R, where T_S_R is the 6DoF robot pose at
+    if (LoopClosureEdgeServer::kFake6dofTransforms) {
+      // Go from 4DoF submap origin poses T_O_S to 6DoF robot poses T_O_R
+      // by using T_O_B = T_O_S * T_S_R, where T_S_R is the 6DoF robot pose at
       // submap creation time
       // NOTE: The loop closure edge covariances are estimated for the 4DoF
       //       submap poses. Using covariances in combination with 6DoF poses
       //       therefore isn't correct, but might be acceptably close for small
       //       pitch/roll.
-      T_M_A = T_M_A * first_submap.getPoseHistory().begin()->second;
-      T_M_B = T_M_B * second_submap.getPoseHistory().begin()->second;
+      T_O_A = T_O_A * first_submap.getPoseHistory().begin()->second;
+      T_O_B = T_O_B * second_submap.getPoseHistory().begin()->second;
     }
 
-    Transformation T_A_B = T_M_A.inverse() * T_M_B;
+    Transformation T_A_B = T_O_A.inverse() * T_O_B;
     tf::poseKindrToMsg(T_A_B.cast<double>(), &edge_msg.T_A_B.pose);
 
     // Set the edge's covariance
@@ -79,7 +82,8 @@ void LoopClosureEdgeServer::publishLoopClosureEdges(
       PoseGraph::EdgeCovarianceMap::const_iterator covariance_iter =
           edge_covariance_map.find(overlapping_submap_pair);
       if (covariance_iter != edge_covariance_map.end()) {
-        edge_msg.T_A_B.covariance.fill(set_unknown_covariance_entries_to_);
+        edge_msg.T_A_B.covariance.fill(
+            LoopClosureEdgeServer::kSetUnknownCovarianceEntriesTo);
         for (int original_row = 0; original_row < 4; ++original_row) {
           for (int original_col = 0; original_col < 4; ++original_col) {
             int msg_row = original_row;

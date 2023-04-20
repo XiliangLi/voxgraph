@@ -15,7 +15,6 @@
 #include "voxgraph/common.h"
 #include "voxgraph/frontend/submap_collection/submap_timeline.h"
 #include "voxgraph/frontend/submap_collection/voxgraph_submap.h"
-
 namespace voxgraph {
 class VoxgraphSubmapCollection
     : public cblox::SubmapCollection<VoxgraphSubmap> {
@@ -36,14 +35,20 @@ class VoxgraphSubmapCollection
 
   bool shouldCreateNewSubmap(const ros::Time& current_time);
 
-  // Overriden method that guarantees that the submap gets added to the timeline
-  void createNewSubmap(const Transformation& T_mission_base,
-                       const ros::Time& timestamp);
+  // Voxgraph compatible submap creation methods
+  // NOTE: These methods properly add the submaps to the timeline
+  void createNewSubmap(const Transformation& T_odom_base,
+                       const ros::Time& submap_start_time);
+  void addSubmap(const VoxgraphSubmap& submap) override;
+  void addSubmap(VoxgraphSubmap&& submap) override;
+  void addSubmap(const typename VoxgraphSubmap::Ptr submap) override;
+  void addSubmapToTimeline(const VoxgraphSubmap& submap);
 
-  // Delete the inherited methods to avoid accidental calls
-  void createNewSubmap(const Transformation& T_M_S,
-                       const SubmapID submap_id) = delete;
-  SubmapID createNewSubmap(const Transformation& T_M_S) = delete;
+  // Warn the user to avoid using the submap creation methods inherited from
+  // cblox that provide insufficient time information
+  void createNewSubmap(const Transformation& T_O_S,
+                       const SubmapID submap_id) override;
+  SubmapID createNewSubmap(const Transformation& T_O_S) override;
 
   SubmapID getPreviousSubmapId() const {
     return submap_timeline_.getPreviousSubmapId();
@@ -56,9 +61,7 @@ class VoxgraphSubmapCollection
   }
 
   bool lookupActiveSubmapByTime(const ros::Time& timestamp,
-                                SubmapID* submap_id) {
-    return submap_timeline_.lookupActiveSubmapByTime(timestamp, submap_id);
-  }
+                                SubmapID* submap_id);
 
   PoseStampedVector getPoseHistory() const;
 
@@ -66,6 +69,28 @@ class VoxgraphSubmapCollection
   // NOTE: The submap origin poses must have zero pitch and roll since
   //       the pose graph optimization only operates in 4D (x, y, z and yaw).
   static Transformation gravityAlignPose(const Transformation& input_pose);
+
+  auto const getTimeLine() const {
+    return std::make_pair(getSubmap(getFirstSubmapId()).getStartTime(),
+                          getSubmap(getLastSubmapId()).getEndTime());
+  }
+
+  bool lookUpSubmapByTime(ros::Time time, VoxgraphSubmap::Ptr* submap,
+                          SubmapID* csid, Transformation* T_submap_t) {
+    if (lookupActiveSubmapByTime(time, csid)) {
+      *submap = getSubmapPtr(*csid);
+      if ((*submap)->lookupPoseByTime(time, T_submap_t)) {
+        return true;
+      } else {
+        LOG(WARNING) << "Requested time " << time
+                     << " has no corresponding robot pose!";
+        return false;
+      }
+    } else {
+      LOG(WARNING) << "No active submap containing requested time ";
+      return false;
+    }
+  }
 
  private:
   bool verbose_;

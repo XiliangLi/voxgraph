@@ -2,31 +2,34 @@
   <!-- User supplied arguments -->
   <arg name="pointcloud_topic"
        doc="ROS topic for pointcloud input"/>
-  <arg name="rosbag_path"
-       default=""
+  <arg name="bag_file"
+       default="/home/lxl/Documents/dataset/bagfiles/scenenn_231.bag"
        doc="Replay the rosbag at the specified path. Can be left blank." />
+  <arg name="play_bag"
+       default="true"/>
+  <arg name="visualize" 
+       default="false"
+       doc="visual mask and depth segmentation image"/>
   <arg name="rosbag_skip_first_n_sec"
        default="0"
        doc="Skip the first n seconds of the rosbag." />
   <arg name="debug_mode"
-       default="false"
+       default="true"
        doc="Run the mapper in debug mode." />
   <arg name="show_rviz"
        default="false"
        doc="Automatically launch Rviz." />
 
-  <!-- Play the rosbag, unless no path is specified -->
-  <node unless="$(eval arg('rosbag_path') is '')"
-        name="player" pkg="rosbag" type="play" output="screen"
-        args="-r 1.0 -s $(arg rosbag_skip_first_n_sec) -q --clock $(arg rosbag_path)" />
 
-  <!-- Run voxblox in sliding window mode -->
+  <!-- Run voxblox_pp in sliding window mode -->
   <group>
-    <node name="voxblox" pkg="voxblox_ros" type="tsdf_server"
-          output="screen" args="-alsologtostderr" clear_params="true">
-      <remap from="pointcloud" to="$(arg pointcloud_topic)"/>
-      <rosparam file="$(find voxgraph)/config/voxblox_temporal_window.yaml"/>
-    </node>
+    <include file="$(find gsm_node)/launch/vpp_pipeline.launch">
+        <arg name="scene_name" value="scenenn" />
+        <arg name="sensor_name" value="primesense" />
+        <arg name="visualize" value="$(arg visualize)" />
+    </include>
+
+  
   </group>
 
   <!-- Run voxgraph, subscribing to voxblox's sliding window -->
@@ -36,8 +39,9 @@
 
     <node name="voxgraph_mapper" pkg="voxgraph" type="voxgraph_mapping_node"
           output="screen" launch-prefix="$(arg launch_prefix)">
-      <rosparam file="$(find voxgraph)/config/voxgraph_mapper.yaml" />
-      <param name="submap_topic" value="/voxblox/tsdf_map_out" />
+      <rosparam file="$(find voxgraph)/config/scenenn_voxgraph_mapper.yaml" />
+      <param name="submap_topic" value="/gsm_node/tsdf_map_out" />
+
     </node>
   </group>
 
@@ -47,4 +51,13 @@
     <node pkg="rviz" type="rviz" name="$(anon rviz)" output="screen"
           args="-d $(arg rviz_file)" />
   </group>
+
+  <!-- <node name="bag" pkg="rosbag" type="play" output="screen" args=" -d 5 -r 0.2 -clock $(arg bag_file)" if="$(arg play_bag)">
+  </node> -->
+  <!-- primesense_topics -->
+     <!-- depth_image_sub_topic: /camera/depth/image_raw
+     rgb_image_sub_topic: /camera/rgb/image_raw
+     depth_camera_info_sub_topic: /camera/depth/camera_info
+     rgb_camera_info_sub_topic: /camera/rgb/camera_info -->
+
 </launch>

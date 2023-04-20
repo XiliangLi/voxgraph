@@ -7,6 +7,7 @@
 
 #include <cblox/core/tsdf_esdf_submap.h>
 #include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
 
 #include "voxgraph/frontend/submap_collection/bounding_box.h"
 #include "voxgraph/frontend/submap_collection/registration_point.h"
@@ -30,11 +31,23 @@ class VoxgraphSubmap : public cblox::TsdfEsdfSubmap {
     } registration_filter;
   };
 
-  VoxgraphSubmap(const voxblox::Transformation& T_M_S,
+  // Standard constructor
+  VoxgraphSubmap(const voxblox::Transformation& T_O_S,
                  const cblox::SubmapID& submap_id, const Config& config);
+  // Copy constructor
+  // NOTE: Copying the TSDF and ESDF layers is delegated to the
+  //       TsdfEsdfSubmap copy constructor
+  VoxgraphSubmap(const VoxgraphSubmap& rhs) = default;
 
-  // Create a VoxgraphSubmap based on a COPY of a TsdfLayer
-  VoxgraphSubmap(const voxblox::Transformation& T_M_S,
+  // Copy submap with a new id
+  VoxgraphSubmap(const cblox::SubmapID& submap_id, const VoxgraphSubmap& rhs);
+
+  // Move constructor
+  // NOTE: Moving the TSDF and ESDF layers is delegated to the
+  //       TsdfEsdfSubmap move constructor
+  VoxgraphSubmap(VoxgraphSubmap&& rhs) = default;
+  // Construct based on a TsdfLayer copy
+  VoxgraphSubmap(const voxblox::Transformation& T_O_S,
                  const cblox::SubmapID& submap_id,
                  const voxblox::Layer<voxblox::TsdfVoxel>& tsdf_layer);
 
@@ -54,9 +67,10 @@ class VoxgraphSubmap : public cblox::TsdfEsdfSubmap {
 
   // Indicate that the submap is finished and generate all cached members
   // NOTE: These cached members are mainly used in the registration cost funcs
-  virtual void finishSubmap() override;
+  void finishSubmap() override;
 
-  void transformSubmap(const voxblox::Transformation& T_new_old);
+  void transformSubmap(const voxblox::Transformation& T_new_old,
+                       bool transform_layer = true);
 
   // The type of registration points supported by this submap
   enum class RegistrationPointType { kIsosurfacePoints = 0, kVoxels };
@@ -68,18 +82,20 @@ class VoxgraphSubmap : public cblox::TsdfEsdfSubmap {
   bool overlapsWith(const VoxgraphSubmap& other_submap) const;
   const BoundingBox getSubmapFrameSurfaceObb() const;
   const BoundingBox getSubmapFrameSubmapObb() const;
-  const BoundingBox getMissionFrameSurfaceAabb() const;
-  const BoundingBox getMissionFrameSubmapAabb() const;
-  const BoxCornerMatrix getMissionFrameSurfaceObbCorners() const;
-  const BoxCornerMatrix getMissionFrameSubmapObbCorners() const;
-  const BoxCornerMatrix getMissionFrameSurfaceAabbCorners() const;
-  const BoxCornerMatrix getMissionFrameSubmapAabbCorners() const;
+  const BoundingBox getOdomFrameSurfaceAabb() const;
+  const BoundingBox getOdomFrameSubmapAabb() const;
+  const BoxCornerMatrix getOdomFrameSurfaceObbCorners() const;
+  const BoxCornerMatrix getOdomFrameSubmapObbCorners() const;
+  const BoxCornerMatrix getOdomFrameSurfaceAabbCorners() const;
+  const BoxCornerMatrix getOdomFrameSubmapAabbCorners() const;
 
   // Load a submap from stream.
   // Note: Returns a nullptr if load is unsuccessful.
   static VoxgraphSubmap::Ptr LoadFromStream(const Config& config,
                                             std::fstream* proto_file_ptr,
                                             uint64_t* tmp_byte_offset_ptr);
+
+  sensor_msgs::PointCloud2::Ptr mesh_pointcloud_;
 
  private:
   typedef Eigen::Matrix<voxblox::FloatingPoint, 4, 8> HomogBoxCornerMatrix;
@@ -106,7 +122,7 @@ class VoxgraphSubmap : public cblox::TsdfEsdfSubmap {
   WeightedSampler<RegistrationPoint> relevant_voxels_;
   void findRelevantVoxelIndices();
 
-  // Object containing all isosurface vertices stored as [x, y, z, weight]
+  // Object containing all isosurface vertices stored as [x, y, z, weight, label]
   WeightedSampler<RegistrationPoint> isosurface_vertices_;
   voxblox::IndexSet isosurface_blocks_;
   void findIsosurfaceVertices();

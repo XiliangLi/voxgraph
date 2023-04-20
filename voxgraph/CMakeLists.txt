@@ -25,9 +25,7 @@ endif()
 #############
 # LIBRARIES #
 #############
-# NOTE: The library is static to avoid segfaults that
-#       otherwise occur in voxblox multi threading
-cs_add_library(${PROJECT_NAME} STATIC
+cs_add_library(${PROJECT_NAME}
     src/frontend/voxgraph_mapper.cpp
     src/frontend/pose_graph_interface/pose_graph_interface.cpp
     src/frontend/pose_graph_interface/node_templates.cpp
@@ -37,9 +35,6 @@ cs_add_library(${PROJECT_NAME} STATIC
     src/frontend/submap_collection/submap_timeline.cpp
     src/frontend/submap_collection/voxgraph_submap.cpp
     src/frontend/submap_collection/voxgraph_submap_collection.cpp
-    src/frontend/map_tracker/map_tracker.cpp
-    src/frontend/map_tracker/transformers/tf_transformer.cpp
-    src/frontend/map_tracker/transformers/odometry_transformer.cpp
     src/backend/pose_graph.cpp
     src/backend/node/node.cpp
     src/backend/node/node_collection.cpp

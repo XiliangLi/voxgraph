@@ -9,6 +9,7 @@ struct RegistrationPoint {
   voxblox::Point position;
   float distance;
   float weight;
+  uint label;
 };
 }  // namespace voxgraph
 

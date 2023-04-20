@@ -1,19 +1,21 @@
 #ifndef VOXGRAPH_FRONTEND_VOXGRAPH_MAPPER_H_
 #define VOXGRAPH_FRONTEND_VOXGRAPH_MAPPER_H_
 
+#include <deque>
 #include <future>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_srvs/Empty.h>
 #include <voxblox_msgs/FilePath.h>
+#include <voxblox_msgs/LayerWithTrajectory.h>
 #include <voxgraph_msgs/LoopClosure.h>
 
 #include "voxgraph/common.h"
 #include "voxgraph/frontend/frame_names.h"
-#include "voxgraph/frontend/map_tracker/map_tracker.h"
 #include "voxgraph/frontend/measurement_processors/gps_processor.h"
 #include "voxgraph/frontend/measurement_processors/pointcloud_integrator.h"
 #include "voxgraph/frontend/pose_graph_interface/pose_graph_interface.h"
@@ -36,11 +38,10 @@ class VoxgraphMapper {
   ~VoxgraphMapper() = default;
 
   // ROS topic callbacks
-  void pointcloudCallback(const sensor_msgs::PointCloud2::Ptr& pointcloud_msg);
   void loopClosureCallback(const voxgraph_msgs::LoopClosure& loop_closure_msg);
-
-  // ROS timer callbacks
-  void publishActiveSubmapMeshCallback();
+  virtual bool submapCallback(
+      const voxblox_msgs::LayerWithTrajectory& submap_msg,
+      bool transform_layer);
 
   // ROS service callbacks
   bool publishSeparatedMeshCallback(
@@ -68,16 +69,23 @@ class VoxgraphMapper {
   bool saveOptimizationTimesCallback(
       voxblox_msgs::FilePath::Request& request,     // NOLINT
       voxblox_msgs::FilePath::Response& response);  // NOLINT
+  bool pauseOptimizationCallback(
+      std_srvs::SetBool::Request& request,     // NOLINT
+      std_srvs::SetBool::Response& response);  // NOLINT
 
   const VoxgraphSubmapCollection& getSubmapCollection() {
     return *submap_collection_ptr_;
+  }
+
+  const VoxgraphSubmapCollection::Ptr& getSubmapCollectionPtr() {
+    return submap_collection_ptr_;
   }
 
   const PoseGraph::SolverSummaryList& getSolverSummaries() {
     return pose_graph_interface_.getSolverSummaries();
   }
 
- private:
+ protected:
   // Node handles
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
@@ -98,32 +106,31 @@ class VoxgraphMapper {
   void getParametersFromRos();
 
   // New submap creation, pose graph optimization and map publishing
-  void switchToNewSubmap(const ros::Time& current_timestamp);
   int optimizePoseGraph();
   void publishMaps(const ros::Time& current_timestamp);
+  double submap_pose_tf_publishing_period_s_;
+  virtual void publishSubmapPoseTFs();
+  ros::Timer submap_pose_tf_publishing_timer_;
 
   // Asynchronous handle for the pose graph optimization thread
   std::future<int> optimization_async_handle_;
 
   // ROS topic subscribers
-  std::string pointcloud_topic_;
-  int subscriber_queue_length_;
-  ros::Subscriber pointcloud_subscriber_;
   std::string loop_closure_topic_;
-  int loop_closure_subscriber_queue_length_;
+  std::string submap_topic_;
+  int loop_closure_topic_queue_length_;
+  int submap_topic_queue_length_;
   ros::Subscriber loop_closure_subscriber_;
+  ros::Subscriber submap_subscriber_;
   // TODO(victorr): Add support for absolute pose measurements
 
-  // Timers.
-  ros::Timer update_mesh_timer_;
-
   // ROS topic publishers
-  ros::Publisher separated_mesh_pub_;
-  ros::Publisher active_mesh_pub_;
+  ros::Publisher submap_mesh_pub_;
   ros::Publisher combined_mesh_pub_;
   ros::Publisher pose_history_pub_;
   ros::Publisher loop_closure_links_pub_;
   ros::Publisher loop_closure_axes_pub_;
+  int publisher_queue_length_;
 
   // ROS service servers
   ros::ServiceServer publish_separated_mesh_srv_;
@@ -135,12 +142,14 @@ class VoxgraphMapper {
   ros::ServiceServer save_separated_mesh_srv_;
   ros::ServiceServer save_combined_mesh_srv_;
   ros::ServiceServer save_optimization_times_srv_;
+  ros::ServiceServer pause_optimization_srv_;
   // TODO(victorr): Add srvs to receive absolute pose and loop closure updates
 
   // Constraints to be used
   bool registration_constraints_enabled_;
   bool odometry_constraints_enabled_;
   bool height_constraints_enabled_;
+  bool pause_optimization_;
 
   // Instantiate the submap collection
   VoxgraphSubmap::Config submap_config_;
@@ -153,16 +162,33 @@ class VoxgraphMapper {
   // Interface to ease interaction with the pose graph
   PoseGraphInterface pose_graph_interface_;
 
-  // Measurement processors
-  PointcloudIntegrator pointcloud_integrator_;
-
   // Map servers, used to share the projected map and submaps with ROS nodes
-  ProjectedMapServer projected_map_server_;
   SubmapServer submap_server_;
   LoopClosureEdgeServer loop_closure_edge_server_;
 
-  // Map tracker handles the odometry input and refines it using scan-to-map ICP
-  MapTracker map_tracker_;
+  // Class handling all frame names used to interface with ROS
+  FrameNames frame_names_;
+
+  std::deque<std::pair<voxgraph_msgs::LoopClosure, int>>
+      future_loop_closure_queue_;
+  int future_loop_closure_queue_length_;
+  void addFutureLoopClosure(const voxgraph_msgs::LoopClosure& loop_closure_msg);
+  void processFutureLoopClosure();
+  inline bool isTimeInFuture(const ros::Time& timestamp) {
+    SubmapID submap_id;
+    return !submap_collection_ptr_->lookupActiveSubmapByTime(timestamp,
+                                                             &submap_id);
+  }
+  bool addLoopClosureMesurement(
+      const voxgraph_msgs::LoopClosure& loop_closure_msg);
+  constexpr static int kMaxNotCatched = 2;
+
+  virtual VoxgraphSubmap draftNewSubmap() {
+    return submap_collection_ptr_->draftNewSubmap();
+  }
+  virtual void addSubmap(const VoxgraphSubmap::Ptr& new_submap) {
+    submap_collection_ptr_->addSubmap(new_submap);
+  }
 };
 }  // namespace voxgraph
 

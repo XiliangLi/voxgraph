@@ -17,7 +17,9 @@ bool PoseGraph::hasSubmapNode(const voxgraph::SubmapNode::SubmapId& submap_id) {
   auto ptr = node_collection_.getSubmapNodePtrById(submap_id);
   return ptr != nullptr;
 }
-
+bool PoseGraph::nodeIsConstant(const voxgraph::SubmapNode::SubmapId& submap_id) {
+  return node_collection_.getSubmapNodePtrById(submap_id)->isConstant();
+}
 void PoseGraph::addReferenceFrameNode(
     const ReferenceFrameNode::Config& config) {
   node_collection_.addReferenceFrameNode(config);
@@ -71,6 +73,36 @@ void PoseGraph::addRegistrationConstraint(
   }
 }
 
+void PoseGraph::addForceRegistrationConstraint(
+    const RegistrationConstraint::Config& config) {
+  CHECK_NE(config.first_submap_id, config.second_submap_id)
+      << "Cannot constrain submap " << config.first_submap_id << " to itself";
+
+  // Check if there're submap nodes corresponding to both submap IDs
+  CHECK(node_collection_.getSubmapNodePtrById(config.first_submap_id))
+      << "Graph contains no node for submap " << config.first_submap_id;
+  CHECK(node_collection_.getSubmapNodePtrById(config.second_submap_id))
+      << "Graph contains no node for submap " << config.second_submap_id;
+
+  // Add to the constraint set
+  constraints_collection_.addForceRegistrationConstraint(config);
+
+  // TODO(victorr): Remove or permanently add the experimental code below
+  if (config.registration.registration_point_type ==
+      VoxgraphSubmap::RegistrationPointType::kIsosurfacePoints) {
+    RegistrationConstraint::Config mirrored_config = config;
+    mirrored_config.first_submap_id = config.second_submap_id;
+    mirrored_config.first_submap_ptr = config.second_submap_ptr;
+    mirrored_config.second_submap_id = config.first_submap_id;
+    mirrored_config.second_submap_ptr = config.first_submap_ptr;
+    constraints_collection_.addForceRegistrationConstraint(mirrored_config);
+  }
+}
+
+void PoseGraph::addSubmapRelativePoseConstraint(
+    const RelativePoseConstraint::Config& config) {
+  constraints_collection_.addSubmapRelativePoseConstraint(config);
+}
 void PoseGraph::initialize(bool exclude_registration_constraints) {
   // Initialize the problem
   problem_options_.local_parameterization_ownership =
@@ -82,7 +114,8 @@ void PoseGraph::initialize(bool exclude_registration_constraints) {
       node_collection_, problem_ptr_.get(), exclude_registration_constraints);
 }
 
-void PoseGraph::optimize(bool exclude_registration_constraints) {
+void PoseGraph::optimize(bool exclude_registration_constraints,
+                         float parameter_tolerance) {
   // Initialize the problem
   initialize(exclude_registration_constraints);
 
@@ -90,19 +123,45 @@ void PoseGraph::optimize(bool exclude_registration_constraints) {
   ceres::Solver::Options ceres_options;
   // TODO(victorr): Set these from parameters
   // TODO(victorr): Look into manual parameter block ordering
-  ceres_options.parameter_tolerance = 3e-3;
-  //  ceres_options.max_num_iterations = 4;
+  ceres_options.parameter_tolerance = parameter_tolerance;
+  // ceres_options.parameter_tolerance = 1e-25;
+  //  ceres_options.max_num_iterations = 30;
   ceres_options.max_solver_time_in_seconds = 4;
   ceres_options.num_threads = 4;
   ceres_options.linear_solver_type = ceres::LinearSolverType::SPARSE_SCHUR;
+  // ceres_options.minimizer_progress_to_stdout = true;
   // NOTE: For small problems DENSE_SCHUR is much faster
 
   ceres::Solver::Summary summary;
   ceres::Solve(ceres_options, problem_ptr_.get(), &summary);
 
   // Display and store the solver summary
-  std::cout << summary.FullReport() << std::endl;
+  std::cout << summary.BriefReport() << std::endl;
+  // std::cout << summary.FullReport() << std::endl;
   solver_summaries_.emplace_back(summary);
+}
+
+std::vector<double> PoseGraph::evaluateResiduals(
+    ConstraintType constraint_type) {
+  ceres::Problem::EvaluateOptions eval_options;
+  eval_options.residual_blocks =
+      constraints_collection_.getResidualBlockIds(constraint_type);
+  std::vector<double> residuals;
+  problem_ptr_->Evaluate(eval_options, NULL, &residuals, NULL, NULL);
+  return residuals;
+}
+
+bool PoseGraph::getSubmapPose(const SubmapID submap_id,
+                              Transformation* submap_pose) {
+  CHECK_NOTNULL(submap_pose);
+  SubmapNode::Ptr submap_node_ptr =
+      node_collection_.getSubmapNodePtrById(submap_id);
+  if (submap_node_ptr) {
+    *submap_pose = submap_node_ptr->getPose();
+    return true;
+  } else {
+    return false;
+  }
 }
 
 PoseGraph::PoseMap PoseGraph::getSubmapPoses() {
@@ -209,4 +268,5 @@ PoseGraph::VisualizationEdgeList PoseGraph::getVisualizationEdges() const {
 
   return edges;
 }
+
 }  // namespace voxgraph

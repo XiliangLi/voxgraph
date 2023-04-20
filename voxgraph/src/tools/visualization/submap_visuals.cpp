@@ -7,45 +7,60 @@
 #include <cblox/mesh/submap_mesher.h>
 #include <eigen_conversions/eigen_msg.h>
 #include <voxblox/io/mesh_ply.h>
+#include <voxblox_msgs/MultiMesh.h>
 #include <voxblox_ros/mesh_vis.h>
 #include <voxblox_ros/ptcloud_vis.h>
 
 namespace voxgraph {
 SubmapVisuals::SubmapVisuals(VoxgraphSubmap::Config submap_config,
                              voxblox::MeshIntegratorConfig mesh_config)
-    : mesh_config_(std::move(mesh_config)), mesh_opacity_(1.0) {
+    : submap_config_(submap_config),
+      mesh_config_(mesh_config),
+      mesh_opacity_(1.0) {
   // Meshing params from ROS params server
   // NOTE(alexmillane): The separated mesher *requires* color, so this is
   //                    hard-coded.
   combined_submap_mesher_.reset(
-      new cblox::SubmapMesher(std::move(submap_config), mesh_config_));
+      new cblox::SubmapMesher(submap_config_, mesh_config_));
   mesh_config_.use_color = true;
   separated_submap_mesher_.reset(
-      new cblox::SubmapMesher(std::move(submap_config), mesh_config_));
+      new cblox::SubmapMesher(submap_config_, mesh_config_));
+}
+
+SubmapVisuals::SubmapVisuals(const SubmapVisuals& rhs)
+    : SubmapVisuals(rhs.submap_config_, rhs.mesh_config_) {
+  setMeshOpacity(rhs.mesh_opacity_);
+  setSubmapMeshColorMode(rhs.submap_mesh_color_mode_);
+  setCombinedMeshColorMode(rhs.combined_mesh_color_mode_);
 }
 
 void SubmapVisuals::publishMesh(const voxblox::MeshLayer::Ptr& mesh_layer_ptr,
-                                const std::string& submap_frame,
+                                const std::string& frame_id,
                                 const ros::Publisher& publisher,
                                 const voxblox::ColorMode& color_mode) const {
   // Create a marker containing the mesh
-  visualization_msgs::Marker marker;
-  voxblox::fillMarkerWithMesh(mesh_layer_ptr, color_mode, &marker);
-  marker.header.frame_id = submap_frame;
-  // Adapt mesh opacity
-  marker.color.a = mesh_opacity_;
-  for (std_msgs::ColorRGBA& color : marker.colors) {
-    color.a = mesh_opacity_;
-  }
-  // Update the marker's transform each time its TF frame is updated:
-  marker.frame_locked = true;
-  publisher.publish(marker);
+  voxblox_msgs::Mesh mesh_msg;
+  voxblox::generateVoxbloxMeshMsg(mesh_layer_ptr, color_mode, &mesh_msg);
+  mesh_msg.header.frame_id = frame_id;
+  publisher.publish(mesh_msg);
+}
+
+void SubmapVisuals::publishMultiMesh(
+    const voxblox::MeshLayer::Ptr& mesh_layer_ptr, const std::string& frame_id,
+    const ros::Publisher& publisher, const voxblox::ColorMode& color_mode,
+    const SubmapID mesh_id) const {
+  // Create a marker containing the mesh
+  voxblox_msgs::MultiMesh mesh_msg;
+  voxblox::generateVoxbloxMeshMsg(mesh_layer_ptr, color_mode, &mesh_msg.mesh);
+  mesh_msg.header.frame_id = frame_id;
+  mesh_msg.name_space = "submap_" + std::to_string(mesh_id);
+  publisher.publish(mesh_msg);
 }
 
 void SubmapVisuals::publishMesh(
     const cblox::SubmapCollection<VoxgraphSubmap>& submap_collection,
     const cblox::SubmapID& submap_id, const voxblox::Color& submap_color,
-    const std::string& submap_frame, const ros::Publisher& publisher) const {
+    const std::string& frame_id, const ros::Publisher& publisher) const {
   // Get a pointer to the submap
   VoxgraphSubmap::ConstPtr submap_ptr =
       submap_collection.getSubmapConstPtr(submap_id);
@@ -55,35 +70,42 @@ void SubmapVisuals::publishMesh(
   auto mesh_layer_ptr =
       std::make_shared<cblox::MeshLayer>(submap_collection.block_size());
 
-  voxblox::MeshIntegrator<voxblox::TsdfVoxel> reference_mesh_integrator(
-      mesh_config_, submap_ptr->getTsdfMap().getTsdfLayer(),
-      mesh_layer_ptr.get());
-  reference_mesh_integrator.generateMesh(false, false);
-  separated_submap_mesher_->colorMeshLayer(submap_color, mesh_layer_ptr.get());
+  generateSubmapMesh(submap_ptr, submap_color, mesh_layer_ptr.get());
 
   // Publish mesh
-  publishMesh(mesh_layer_ptr, submap_frame, publisher);
+  publishMultiMesh(mesh_layer_ptr, frame_id, publisher, submap_mesh_color_mode_,
+                   submap_id);
+}
+
+void SubmapVisuals::publishMesh(
+    const cblox::SubmapCollection<VoxgraphSubmap>& submap_collection,
+    const SubmapID& submap_id, const std::string& frame_id,
+    const ros::Publisher& publisher, bool use_submap_color_mode) {
+  publishMesh(submap_collection, submap_id,
+              use_submap_color_mode
+                  ? voxblox::Color()
+                  : submap_id_color_map_.colorLookup(submap_id),
+              frame_id, publisher);
 }
 
 void SubmapVisuals::publishSeparatedMesh(
     const cblox::SubmapCollection<VoxgraphSubmap>& submap_collection,
-    const std::string& mission_frame, const ros::Publisher& publisher) {
+    const std::string& odom_frame, const ros::Publisher& publisher) {
   auto mesh_layer_ptr =
       std::make_shared<cblox::MeshLayer>(submap_collection.block_size());
   separated_submap_mesher_->generateSeparatedMesh(submap_collection,
                                                   mesh_layer_ptr.get());
-  publishMesh(mesh_layer_ptr, mission_frame, publisher);
+  publishMesh(mesh_layer_ptr, odom_frame, publisher, submap_mesh_color_mode_);
 }
 
 void SubmapVisuals::publishCombinedMesh(
     const cblox::SubmapCollection<VoxgraphSubmap>& submap_collection,
-    const std::string& mission_frame, const ros::Publisher& publisher) {
+    const std::string& odom_frame, const ros::Publisher& publisher) {
   auto mesh_layer_ptr =
       std::make_shared<cblox::MeshLayer>(submap_collection.block_size());
   combined_submap_mesher_->generateCombinedMesh(submap_collection,
                                                 mesh_layer_ptr.get());
-  publishMesh(mesh_layer_ptr, mission_frame, publisher,
-              voxblox::ColorMode::kNormals);
+  publishMesh(mesh_layer_ptr, odom_frame, publisher, combined_mesh_color_mode_);
 }
 
 void SubmapVisuals::saveSeparatedMesh(
@@ -104,6 +126,22 @@ void SubmapVisuals::saveCombinedMesh(
   combined_submap_mesher_->generateCombinedMesh(submap_collection,
                                                 mesh_layer_ptr.get());
   voxblox::outputMeshLayerAsPly(filepath, *mesh_layer_ptr);
+}
+
+void SubmapVisuals::saveAndPubCombinedMesh(
+    const cblox::SubmapCollection<VoxgraphSubmap>& submap_collection,
+    const std::string& mission_frame, const ros::Publisher& publisher,
+    const std::string& filepath) {
+  auto mesh_layer_ptr =
+      std::make_shared<cblox::MeshLayer>(submap_collection.block_size());
+  combined_submap_mesher_->generateCombinedMesh(submap_collection,
+                                                mesh_layer_ptr.get());
+
+  if (publisher.getNumSubscribers() > 0)
+    publishMesh(mesh_layer_ptr, mission_frame, publisher,
+                combined_mesh_color_mode_);
+  if (filepath.size() > 0)
+    voxblox::outputMeshLayerAsPly(filepath, *mesh_layer_ptr);
 }
 
 void SubmapVisuals::publishBox(const BoxCornerMatrix& box_corner_matrix,
@@ -149,11 +187,11 @@ void SubmapVisuals::publishBox(const BoxCornerMatrix& box_corner_matrix,
 
 void SubmapVisuals::publishPoseHistory(
     const VoxgraphSubmapCollection& submap_collection,
-    const std::string& mission_frame, const ros::Publisher& publisher) const {
+    const std::string& odom_frame, const ros::Publisher& publisher) const {
   // Create the pose history message
   nav_msgs::Path pose_history_msg;
   pose_history_msg.header.stamp = ros::Time::now();
-  pose_history_msg.header.frame_id = mission_frame;
+  pose_history_msg.header.frame_id = odom_frame;
   pose_history_msg.poses = submap_collection.getPoseHistory();
 
   // Publish the message

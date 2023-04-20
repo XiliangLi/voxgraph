@@ -13,7 +13,7 @@ class SubmapTimeline {
  public:
   SubmapTimeline() = default;
 
-  void addNextSubmap(const ros::Time& submap_creation_timestamp,
+  void addNextSubmap(const ros::Time& submap_end_timestamp,
                      const cblox::SubmapID& submap_id);
 
   bool lookupActiveSubmapByTime(const ros::Time& timestamp,
@@ -24,7 +24,7 @@ class SubmapTimeline {
   cblox::SubmapID getLastSubmapId() const;
 
  private:
-  // Map from each time interval's start time to the corresponding active submap
+  // Map from each time interval's end time to the corresponding active submap
   std::map<const ros::Time, cblox::SubmapID> submap_timeline_;
 };
 }  // namespace voxgraph

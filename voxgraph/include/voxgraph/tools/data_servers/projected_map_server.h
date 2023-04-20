@@ -24,7 +24,7 @@ class ProjectedMapServer {
       const ros::Time& timestamp,
       const ros::Publisher& projected_map_publisher);
 
- private:
+ protected:
   ros::Publisher projected_tsdf_map_pub_;
 
   // Convenience methods to generate the message and submap headers

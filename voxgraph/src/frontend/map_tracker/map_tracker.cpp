@@ -91,12 +91,8 @@ void MapTracker::switchToNewSubmap(const Transformation& T_M_S_new) {
 }
 
 void MapTracker::publishTFs() {
-  TfHelper::publishTransform(submap_collection_ptr_->getActiveSubmapPose(),
-                             frame_names_.output_mission_frame,
-                             frame_names_.output_active_submap_frame, false,
-                             current_timestamp_);
   TfHelper::publishTransform(
-      initial_T_S_O_, frame_names_.output_active_submap_frame,
+      Transformation(), frame_names_.output_mission_frame,
       frame_names_.output_odom_frame, false, current_timestamp_);
 
   if (frame_names_.input_odom_frame != frame_names_.output_odom_frame ||
